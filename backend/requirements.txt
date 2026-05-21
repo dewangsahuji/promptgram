@@ -16,3 +16,7 @@ redis
 
 pydantic-settings
 python-dotenv
+
+python-jose
+passlib[bcrypt]
+email-validator
