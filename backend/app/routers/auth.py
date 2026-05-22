@@ -7,6 +7,29 @@ from app.dependencies import get_db
 from app.schemas.auth import UserSignup
 from app.services.auth_service import create_user
 
+
+
+from fastapi import APIRouter
+from fastapi import Depends
+from fastapi import HTTPException
+
+from sqlalchemy.orm import Session
+
+from app.dependencies import get_db
+
+from app.schemas.auth import UserSignup
+from app.schemas.auth import UserLogin
+
+from app.services.auth_service import (
+    create_user,
+    authenticate_user
+)
+
+from app.core.jwt_handler import create_access_token
+from app.core.current_user import get_current_user
+
+
+
 router = APIRouter(
     prefix="/auth",
     tags=["Auth"]
@@ -59,29 +82,6 @@ def login(
         "access_token": token,
         "token_type": "bearer"
     }
-
-
-
-
-from fastapi import APIRouter
-from fastapi import Depends
-from fastapi import HTTPException
-
-from sqlalchemy.orm import Session
-
-from app.dependencies import get_db
-
-from app.schemas.auth import UserSignup
-from app.schemas.auth import UserLogin
-
-from app.services.auth_service import (
-    create_user,
-    authenticate_user
-)
-
-from app.core.jwt_handler import create_access_token
-from app.core.current_user import get_current_user
-
 
 router = APIRouter(
     prefix="/auth",
