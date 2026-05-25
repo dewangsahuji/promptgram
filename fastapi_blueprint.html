@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Syne:wght@400;600;700;800&display=swap');
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f0f13;
+    --bg2: #16161d;
+    --bg3: #1c1c26;
+    --text: #e8e6f0;
+    --muted: #8b89a0;
+    --border: #2a2838;
+    --border2: #3d3b52;
+    --purple: #9d7fff;
+    --purple-light: #1e1a33;
+    --purple-dark: #c4b0ff;
+    --teal: #2dd4a0;
+    --teal-light: #0e2820;
+    --coral: #ff7b5c;
+    --coral-light: #2a1510;
+    --amber: #f0b429;
+    --amber-light: #251d07;
+    --blue: #60a5fa;
+    --blue-light: #0e1e33;
+    --green: #4ade80;
+    --green-light: #0d2218;
+    --gray-light: #1e1e28;
+  }
+
+  html, body { overflow-x: hidden; }
+  body { font-family: 'Syne', sans-serif; background: var(--bg); color: var(--text); }
+
+  .container { max-width: 700px; margin: 0 auto; padding: 0 0 60px; }
+
+  /* HEADER */
+  .header { padding: 28px 0 0; margin-bottom: 4px; }
+  .header-tag { font-size: 10px; font-weight: 700; letter-spacing: .15em; text-transform: uppercase; color: var(--purple); margin-bottom: 6px; }
+  .page-title { font-size: 24px; font-weight: 800; margin-bottom: 4px; }
+  .page-sub { font-size: 13px; color: var(--muted); margin-bottom: 0; }
+
+  /* NAV TABS */
+  .tabs { display: flex; gap: 2px; padding: 16px 0 0; position: sticky; top: 0; background: var(--bg); z-index: 10; border-bottom: 1px solid var(--border); margin-bottom: 28px; overflow-x: auto; }
+  .tab { padding: 8px 14px; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; border: none; background: none; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap; transition: color .15s; font-family: 'Syne', sans-serif; }
+  .tab.active { color: var(--purple); border-bottom-color: var(--purple); }
+  .tab:hover:not(.active) { color: var(--text); }
+
+  .section { display: none; }
+  .section.active { display: block; }
+
+  /* TYPOGRAPHY */
+  .section-label { font-size: 10px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 28px 0 12px; border-left: 2px solid var(--purple); padding-left: 8px; }
+
+  /* CARDS */
+  .card { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; margin-bottom: 10px; }
+  .card-accent { border-left: 3px solid var(--purple); padding-left: 15px; }
+  .card-title { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+  .card-desc { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+  /* BADGE */
+  .badge { display: inline-block; font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 4px; letter-spacing: .04em; }
+  .badge-purple { background: var(--purple-light); color: var(--purple-dark); }
+  .badge-teal { background: var(--teal-light); color: var(--teal); }
+  .badge-coral { background: var(--coral-light); color: var(--coral); }
+  .badge-amber { background: var(--amber-light); color: var(--amber); }
+  .badge-blue { background: var(--blue-light); color: var(--blue); }
+  .badge-green { background: var(--green-light); color: var(--green); }
+  .badge-gray { background: var(--gray-light); color: var(--muted); }
+
+  /* CODE BLOCK */
+  .code { font-family: 'JetBrains Mono', monospace; font-size: 12px; background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; line-height: 1.75; color: var(--muted); margin: 10px 0; overflow-x: auto; white-space: pre; }
+  .code .keyword { color: var(--purple); font-weight: 500; }
+  .code .string { color: var(--teal); }
+  .code .comment { color: #4a4860; }
+  .code .decorator { color: var(--amber); }
+  .code .type { color: var(--blue); }
+  .code .class { color: var(--coral); }
+
+  /* SERVICE GRID */
+  .service-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .service-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+  .service-name { font-size: 13px; font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+  .service-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .dot-purple { background: var(--purple); }
+  .dot-teal { background: var(--teal); }
+  .dot-coral { background: var(--coral); }
+  .dot-blue { background: var(--blue); }
+  .dot-green { background: var(--green); }
+  .service-items { font-size: 12px; color: var(--muted); line-height: 1.9; }
+
+  /* STACK TABLE */
+  .stack-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .stack-row:last-child { border-bottom: none; }
+  .stack-layer { font-size: 13px; color: var(--muted); }
+  .stack-tech { font-size: 13px; font-weight: 600; color: var(--text); }
+
+  /* FLOW */
+  .flow { display: flex; flex-direction: column; }
+  .flow-step { display: flex; gap: 14px; align-items: flex-start; }
+  .flow-line { display: flex; flex-direction: column; align-items: center; }
+  .flow-num { width: 28px; height: 28px; border-radius: 50%; background: var(--purple-light); color: var(--purple-dark); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; border: 1px solid var(--border2); }
+  .flow-connector { width: 1px; background: var(--border2); flex: 1; min-height: 20px; margin: 4px 0; }
+  .flow-content { padding-bottom: 18px; flex: 1; }
+  .flow-title { font-size: 13px; font-weight: 700; margin-bottom: 3px; }
+  .flow-desc { font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+  /* API ENDPOINTS */
+  .endpoint { display: flex; align-items: center; gap: 10px; padding: 9px 12px; background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 6px; font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+  .method { font-weight: 700; min-width: 46px; }
+  .method-post { color: var(--teal); }
+  .method-get { color: var(--blue); }
+  .method-delete { color: var(--coral); }
+  .method-put { color: var(--amber); }
+  .method-patch { color: var(--purple); }
+  .endpoint-path { color: var(--text); flex: 1; }
+  .endpoint-note { font-size: 11px; color: var(--muted); margin-left: auto; }
+
+  /* PHASE */
+  .phase { border: 1px solid var(--border); border-radius: 12px; padding: 18px; margin-bottom: 12px; }
+  .phase-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .phase-num { font-size: 10px; font-weight: 700; letter-spacing: .1em; }
+  .phase-title { font-size: 16px; font-weight: 700; }
+  .phase-tag { margin-left: auto; }
+  .checklist { list-style: none; }
+  .checklist li { font-size: 13px; color: var(--muted); padding: 5px 0; display: flex; align-items: center; gap: 10px; }
+  .checklist li::before { content: ''; width: 16px; height: 16px; border-radius: 4px; border: 1px solid var(--border2); flex-shrink: 0; background: var(--bg3); }
+
+  /* ARCH */
+  .arch { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 24px; }
+  .arch-row { display: flex; justify-content: center; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
+  .arch-box { background: var(--bg3); border: 1px solid var(--border2); border-radius: 8px; padding: 10px 14px; font-size: 12px; font-weight: 600; text-align: center; min-width: 90px; }
+  .arch-box.purple { background: var(--purple-light); border-color: var(--purple); color: var(--purple-dark); }
+  .arch-box.teal { background: var(--teal-light); border-color: var(--teal); color: var(--teal); }
+  .arch-box.coral { background: var(--coral-light); border-color: var(--coral); color: var(--coral); }
+  .arch-box.blue { background: var(--blue-light); border-color: var(--blue); color: var(--blue); }
+  .arch-box.amber { background: var(--amber-light); border-color: var(--amber); color: var(--amber); }
+  .arch-box.green { background: var(--green-light); border-color: var(--green); color: var(--green); }
+  .arch-arrow { text-align: center; color: var(--border2); font-size: 18px; margin: 2px 0; }
+  .arch-split { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 8px; }
+  .arch-group { background: var(--bg3); border: 1px dashed var(--border2); border-radius: 8px; padding: 12px; }
+  .arch-group-label { font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+  .arch-group .arch-box { margin-bottom: 6px; width: 100%; }
+
+  /* DB */
+  .db-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .db-table { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  .db-head { background: var(--purple-light); padding: 9px 12px; font-size: 12px; font-weight: 700; color: var(--purple-dark); font-family: 'JetBrains Mono', monospace; }
+  .db-field { padding: 6px 12px; font-size: 11.5px; font-family: 'JetBrains Mono', monospace; border-top: 1px solid var(--border); display: flex; justify-content: space-between; }
+  .db-type { color: var(--muted); font-size: 10.5px; }
+  .db-pk { color: var(--amber); }
+  .db-fk { color: var(--blue); }
+
+  /* PAGES */
+  .page-item { display: flex; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--border); align-items: flex-start; }
+  .page-item:last-child { border-bottom: none; }
+  .page-icon { width: 38px; height: 38px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+  .page-info { flex: 1; }
+  .page-name { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+  .page-features { font-size: 12px; color: var(--muted); line-height: 1.65; }
+
+  /* ROUTER SECTION */
+  .router-block { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 12px; overflow: hidden; }
+  .router-head { padding: 10px 14px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border); }
+  .router-name { font-size: 13px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+  .router-file { font-size: 11px; color: var(--muted); margin-left: auto; font-family: 'JetBrains Mono', monospace; }
+  .router-body { padding: 10px 14px; }
+
+  /* WARNING CARD */
+  .warn-card { border-radius: 10px; padding: 14px 16px; margin-top: 8px; }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { height: 4px; width: 4px; }
+  ::-webkit-scrollbar-track { background: var(--bg2); }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="header">
+    <p class="header-tag">FastAPI · Python · Complete Backend</p>
+    <p class="page-title">Prompt Platform Blueprint</p>
+    <p class="page-sub">All-FastAPI architecture · AI-powered · AWS S3 · PostgreSQL · Qdrant</p>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="show('overview', this)">Overview</button>
+    <button class="tab" onclick="show('routers', this)">Routers</button>
+    <button class="tab" onclick="show('database', this)">Database</button>
+    <button class="tab" onclick="show('storage', this)">S3 Storage</button>
+    <button class="tab" onclick="show('ai', this)">AI Services</button>
+    <button class="tab" onclick="show('apis', this)">API Ref</button>
+    <button class="tab" onclick="show('phases', this)">Phases</button>
+  </div>
+
+  <!-- OVERVIEW -->
+  <div id="overview" class="section active">
+
+    <p class="section-label">Architecture Diagram</p>
+    <div class="arch">
+      <div class="arch-row">
+        <div class="arch-box purple" style="min-width:220px">React Frontend</div>
+      </div>
+      <div class="arch-arrow">↓</div>
+      <div class="arch-row">
+        <div class="arch-box purple" style="min-width:220px">Nginx Reverse Proxy</div>
+      </div>
+      <div class="arch-arrow">↓</div>
+      <div class="arch-row">
+        <div class="arch-box teal" style="min-width:280px">FastAPI App (Single Process, Multiple Routers)</div>
+      </div>
+      <div class="arch-arrow">↓</div>
+      <div class="arch-split">
+        <div class="arch-group">
+          <div class="arch-group-label">Business Routers</div>
+          <div class="arch-box teal">auth router</div>
+          <div class="arch-box teal">prompts router</div>
+          <div class="arch-box teal">social router</div>
+          <div class="arch-box teal">users router</div>
+        </div>
+        <div class="arch-group">
+          <div class="arch-group-label">AI Routers</div>
+          <div class="arch-box coral">classify router</div>
+          <div class="arch-box coral">embed router</div>
+          <div class="arch-box coral">search router</div>
+          <div class="arch-box coral">moderate router</div>
+        </div>
+      </div>
+      <div class="arch-arrow">↓</div>
+      <div class="arch-row">
+        <div class="arch-box blue">PostgreSQL</div>
+        <div class="arch-box blue">Redis</div>
+        <div class="arch-box amber">Qdrant</div>
+        <div class="arch-box amber">AWS S3</div>
+      </div>
+    </div>
+
+    <p class="section-label">Why All FastAPI — No Node.js</p>
+    <div class="card card-accent">
+      <div class="card-desc">Node.js handled business logic (auth, prompts, social). FastAPI handled AI. This blueprint collapses both into <strong style="color:var(--text)">one FastAPI application</strong> using APIRouter modules — same separation, zero polyglot overhead. Python's ecosystem handles everything: JWT auth, S3 uploads, PostgreSQL (asyncpg), Redis, and all ML models.</div>
+    </div>
+
+    <p class="section-label">Tech Stack</p>
+    <div class="card">
+      <div class="stack-row"><span class="stack-layer">Frontend</span><span class="stack-tech">React + Tailwind CSS</span></div>
+      <div class="stack-row"><span class="stack-layer">Backend (all of it)</span><span class="stack-tech">FastAPI + Python 3.11</span></div>
+      <div class="stack-row"><span class="stack-layer">ASGI Server</span><span class="stack-tech">Uvicorn (prod: Gunicorn + Uvicorn workers)</span></div>
+      <div class="stack-row"><span class="stack-layer">ORM / DB Driver</span><span class="stack-tech">SQLAlchemy 2 (async) + asyncpg</span></div>
+      <div class="stack-row"><span class="stack-layer">Database</span><span class="stack-tech">PostgreSQL 16</span></div>
+      <div class="stack-row"><span class="stack-layer">Cache</span><span class="stack-tech">Redis (via redis-py async)</span></div>
+      <div class="stack-row"><span class="stack-layer">Vector DB</span><span class="stack-tech">Qdrant</span></div>
+      <div class="stack-row"><span class="stack-layer">Image Storage</span><span class="stack-tech">AWS S3 (ap-south-1 Mumbai)</span></div>
+      <div class="stack-row"><span class="stack-layer">AI Models</span><span class="stack-tech">CLIP ViT-B/32 · MobileNet · Yahoo NSFW</span></div>
+      <div class="stack-row"><span class="stack-layer">Auth</span><span class="stack-tech">python-jose (JWT) + passlib (bcrypt)</span></div>
+      <div class="stack-row"><span class="stack-layer">File Upload</span><span class="stack-tech">python-multipart + boto3</span></div>
+      <div class="stack-row"><span class="stack-layer">Reverse Proxy</span><span class="stack-tech">Nginx</span></div>
+      <div class="stack-row"><span class="stack-layer">Deployment</span><span class="stack-tech">Docker Compose</span></div>
+    </div>
+
+    <p class="section-label">Project Structure</p>
+    <div class="code"><span class="keyword">prompt-platform/</span>
+├── <span class="string">frontend/</span>
+│   └── react-app/
+└── <span class="string">backend/</span>               <span class="comment"># One FastAPI app — replaces Node + FastAPI</span>
+    ├── main.py               <span class="comment"># App entry: include all routers</span>
+    ├── config.py             <span class="comment"># Settings (pydantic-settings)</span>
+    ├── database.py           <span class="comment"># SQLAlchemy async engine + session</span>
+    ├── redis_client.py       <span class="comment"># Redis connection</span>
+    ├── s3_client.py          <span class="comment"># boto3 S3 helpers</span>
+    ├── qdrant_client.py      <span class="comment"># Qdrant connection + helpers</span>
+    ├── <span class="keyword">models/</span>               <span class="comment"># SQLAlchemy ORM models</span>
+    │   ├── user.py
+    │   ├── prompt.py
+    │   ├── image.py
+    │   └── social.py
+    ├── <span class="keyword">schemas/</span>              <span class="comment"># Pydantic request/response schemas</span>
+    │   ├── auth.py
+    │   ├── prompt.py
+    │   └── social.py
+    ├── <span class="keyword">routers/</span>              <span class="comment"># APIRouter modules (replaces all Node services)</span>
+    │   ├── auth.py           <span class="comment"># /auth/*</span>
+    │   ├── prompts.py        <span class="comment"># /prompts/*</span>
+    │   ├── images.py         <span class="comment"># /images/* (S3 upload)</span>
+    │   ├── social.py         <span class="comment"># /likes, /comments, /follow</span>
+    │   ├── users.py          <span class="comment"># /users/*</span>
+    │   ├── collections.py    <span class="comment"># /collections/*</span>
+    │   └── <span class="keyword">ai/</span>
+    │       ├── classify.py   <span class="comment"># /ai/classify</span>
+    │       ├── embed.py      <span class="comment"># /ai/embed</span>
+    │       ├── search.py     <span class="comment"># /ai/search</span>
+    │       └── moderate.py   <span class="comment"># /ai/moderate</span>
+    ├── <span class="keyword">dependencies/</span>
+    │   ├── auth.py           <span class="comment"># get_current_user, require_auth</span>
+    │   └── rate_limit.py     <span class="comment"># Redis-based rate limiter dep</span>
+    ├── <span class="keyword">services/</span>             <span class="comment"># Business logic (no HTTP, pure Python)</span>
+    │   ├── auth_service.py
+    │   ├── prompt_service.py
+    │   └── ai_service.py
+    ├── requirements.txt
+    └── Dockerfile
+<span class="comment">
+# Top-level
+</span>├── docker-compose.yml
+└── nginx/nginx.conf</div>
+
+    <p class="section-label">main.py — App Bootstrap</p>
+    <div class="code"><span class="keyword">from</span> fastapi <span class="keyword">import</span> FastAPI
+<span class="keyword">from</span> fastapi.middleware.cors <span class="keyword">import</span> CORSMiddleware
+<span class="keyword">from</span> routers <span class="keyword">import</span> auth, prompts, images, social, users, collections
+<span class="keyword">from</span> routers.ai <span class="keyword">import</span> classify, embed, search, moderate
+
+app = FastAPI(<span class="string">title</span>=<span class="string">"Prompt Platform API"</span>, <span class="string">version</span>=<span class="string">"1.0"</span>)
+
+app.add_middleware(CORSMiddleware, allow_origins=[<span class="string">"*"</span>],
+    allow_methods=[<span class="string">"*"</span>], allow_headers=[<span class="string">"*"</span>])
+
+<span class="comment"># Business routers</span>
+app.include_router(auth.router,        prefix=<span class="string">"/auth"</span>)
+app.include_router(prompts.router,     prefix=<span class="string">"/prompts"</span>)
+app.include_router(images.router,      prefix=<span class="string">"/images"</span>)
+app.include_router(social.router)
+app.include_router(users.router,       prefix=<span class="string">"/users"</span>)
+app.include_router(collections.router, prefix=<span class="string">"/collections"</span>)
+
+<span class="comment"># AI routers</span>
+app.include_router(classify.router,  prefix=<span class="string">"/ai"</span>)
+app.include_router(embed.router,     prefix=<span class="string">"/ai"</span>)
+app.include_router(search.router,    prefix=<span class="string">"/ai"</span>)
+app.include_router(moderate.router,  prefix=<span class="string">"/ai"</span>)</div>
+
+    <p class="section-label">Engagement Ranking Algorithm</p>
+    <div class="card card-accent">
+      <div class="card-title">Hero Feed Score</div>
+      <div class="code" style="margin-top:8px"><span class="keyword">score</span> = (likes × <span class="string">0.4</span>)
+     + (views × <span class="string">0.2</span>)
+     + (downloads × <span class="string">0.2</span>)
+     + (comments × <span class="string">0.2</span>)
+
+<span class="comment"># Computed in PostgreSQL at query time:</span>
+<span class="keyword">ORDER BY</span>
+  (likes_count * <span class="string">0.4</span> + views * <span class="string">0.2</span>
+   + downloads * <span class="string">0.2</span> + comments_count * <span class="string">0.2</span>) DESC</div>
+    </div>
+  </div>
+
+  <!-- ROUTERS -->
+  <div id="routers" class="section">
+    <p class="section-label">auth router — /auth</p>
+    <div class="code"><span class="comment"># routers/auth.py</span>
+<span class="keyword">from</span> fastapi <span class="keyword">import</span> APIRouter, Depends, HTTPException
+<span class="keyword">from</span> fastapi.security <span class="keyword">import</span> OAuth2PasswordRequestForm
+<span class="keyword">from</span> sqlalchemy.ext.asyncio <span class="keyword">import</span> AsyncSession
+<span class="keyword">from</span> dependencies.auth <span class="keyword">import</span> get_current_user
+<span class="keyword">from</span> schemas.auth <span class="keyword">import</span> UserCreate, TokenResponse
+<span class="keyword">from</span> services.auth_service <span class="keyword">import</span> create_user, authenticate_user
+
+router = APIRouter(tags=[<span class="string">"auth"</span>])
+
+<span class="decorator">@router.post("/signup", response_model=TokenResponse)</span>
+<span class="keyword">async def</span> signup(body: UserCreate, db: AsyncSession = Depends(get_db)):
+    user = <span class="keyword">await</span> create_user(db, body)
+    <span class="keyword">return</span> generate_tokens(user)
+
+<span class="decorator">@router.post("/login", response_model=TokenResponse)</span>
+<span class="keyword">async def</span> login(form: OAuth2PasswordRequestForm = Depends(),
+                db: AsyncSession = Depends(get_db)):
+    user = <span class="keyword">await</span> authenticate_user(db, form.username, form.password)
+    <span class="keyword">if not</span> user: <span class="keyword">raise</span> HTTPException(<span class="string">401</span>, <span class="string">"Invalid credentials"</span>)
+    <span class="keyword">return</span> generate_tokens(user)
+
+<span class="decorator">@router.post("/refresh")</span>
+<span class="keyword">async def</span> refresh(refresh_token: str, redis = Depends(get_redis)):
+    <span class="comment"># Validate refresh token, check Redis blacklist, issue new access token</span>
+    ...
+
+<span class="decorator">@router.post("/logout")</span>
+<span class="keyword">async def</span> logout(token = Depends(get_current_user), redis = Depends(get_redis)):
+    <span class="keyword">await</span> redis.setex(<span class="string">f"blacklist:{token}"</span>, <span class="string">86400</span>, <span class="string">"1"</span>)
+    <span class="keyword">return</span> {<span class="string">"detail"</span>: <span class="string">"Logged out"</span>}</div>
+
+    <p class="section-label">prompts router — /prompts</p>
+    <div class="code"><span class="comment"># routers/prompts.py</span>
+router = APIRouter(tags=[<span class="string">"prompts"</span>])
+
+<span class="decorator">@router.post("/", response_model=PromptOut, status_code=201)</span>
+<span class="keyword">async def</span> create_prompt(
+    body: PromptCreate,
+    current_user = Depends(require_auth),
+    db: AsyncSession = Depends(get_db)
+):
+    prompt = <span class="keyword">await</span> prompt_service.create(db, current_user.id, body)
+    <span class="comment"># Fire-and-forget: trigger AI pipeline</span>
+    background_tasks.add_task(run_ai_pipeline, prompt.id)
+    <span class="keyword">return</span> prompt
+
+<span class="decorator">@router.get("/", response_model=list[PromptOut])</span>
+<span class="keyword">async def</span> list_prompts(
+    page: int = <span class="string">1</span>, limit: int = <span class="string">20</span>,
+    category: str | None = None,
+    db: AsyncSession = Depends(get_db)
+): ...
+
+<span class="decorator">@router.get("/trending", response_model=list[PromptOut])</span>
+<span class="keyword">async def</span> trending(redis = Depends(get_redis), db = Depends(get_db)):
+    cached = <span class="keyword">await</span> redis.get(<span class="string">"trending"</span>)
+    <span class="keyword">if</span> cached: <span class="keyword">return</span> json.loads(cached)
+    results = <span class="keyword">await</span> prompt_service.get_trending(db)
+    <span class="keyword">await</span> redis.setex(<span class="string">"trending"</span>, <span class="string">600</span>, json.dumps(results))
+    <span class="keyword">return</span> results
+
+<span class="decorator">@router.get("/{id}", response_model=PromptOut)</span>
+<span class="keyword">async def</span> get_prompt(id: UUID, db = Depends(get_db)): ...
+
+<span class="decorator">@router.delete("/{id}", status_code=204)</span>
+<span class="keyword">async def</span> delete_prompt(id: UUID, current_user = Depends(require_auth)): ...</div>
+
+    <p class="section-label">images router — /images (S3 upload)</p>
+    <div class="code"><span class="comment"># routers/images.py</span>
+<span class="keyword">from</span> fastapi <span class="keyword">import</span> UploadFile, File, BackgroundTasks
+<span class="keyword">from</span> s3_client <span class="keyword">import</span> upload_to_s3
+
+router = APIRouter(tags=[<span class="string">"images"</span>])
+
+ALLOWED = {<span class="string">"image/jpeg"</span>, <span class="string">"image/png"</span>, <span class="string">"image/webp"</span>}
+MAX_SIZE = <span class="string">10</span> * <span class="string">1024</span> * <span class="string">1024</span>  <span class="comment"># 10 MB</span>
+
+<span class="decorator">@router.post("/upload")</span>
+<span class="keyword">async def</span> upload_image(
+    prompt_id: UUID,
+    file: UploadFile = File(...),
+    background_tasks: BackgroundTasks = BackgroundTasks(),
+    current_user = Depends(require_auth),
+    db = Depends(get_db)
+):
+    <span class="keyword">if</span> file.content_type <span class="keyword">not in</span> ALLOWED:
+        <span class="keyword">raise</span> HTTPException(<span class="string">400</span>, <span class="string">"Invalid file type"</span>)
+
+    content = <span class="keyword">await</span> file.read()
+    <span class="keyword">if</span> len(content) > MAX_SIZE:
+        <span class="keyword">raise</span> HTTPException(<span class="string">413</span>, <span class="string">"File too large"</span>)
+
+    image_uuid = str(uuid4())
+    s3_key = <span class="string">f"originals/{image_uuid}.png"</span>
+    thumb_key = <span class="string">f"thumbnails/{image_uuid}.png"</span>
+
+    s3_url = <span class="keyword">await</span> upload_to_s3(content, s3_key, file.content_type)
+    thumb_url = <span class="keyword">await</span> generate_and_upload_thumbnail(content, thumb_key)
+
+    image = <span class="keyword">await</span> image_service.save(db, prompt_id, s3_key, s3_url, thumb_url)
+
+    <span class="comment"># Background: classify + embed this image</span>
+    background_tasks.add_task(classify_and_embed, image.id, s3_url)
+
+    <span class="keyword">return</span> {<span class="string">"id"</span>: image.id, <span class="string">"url"</span>: s3_url, <span class="string">"thumbnail"</span>: thumb_url}
+
+<span class="decorator">@router.delete("/{id}", status_code=204)</span>
+<span class="keyword">async def</span> delete_image(id: UUID, current_user = Depends(require_auth)): ...</div>
+
+    <p class="section-label">social router — likes / comments / follow</p>
+    <div class="code"><span class="comment"># routers/social.py</span>
+router = APIRouter(tags=[<span class="string">"social"</span>])
+
+<span class="decorator">@router.post("/like/{prompt_id}")</span>
+<span class="keyword">async def</span> toggle_like(prompt_id: UUID, user = Depends(require_auth),
+                      db = Depends(get_db)): ...
+
+<span class="decorator">@router.post("/comment/{prompt_id}")</span>
+<span class="keyword">async def</span> add_comment(prompt_id: UUID, body: CommentCreate,
+                      user = Depends(require_auth), db = Depends(get_db)): ...
+
+<span class="decorator">@router.post("/follow/{user_id}")</span>
+<span class="keyword">async def</span> toggle_follow(user_id: UUID, user = Depends(require_auth),
+                        db = Depends(get_db)): ...
+
+<span class="decorator">@router.post("/collections")</span>
+<span class="keyword">async def</span> create_collection(body: CollectionCreate,
+                             user = Depends(require_auth), db = Depends(get_db)): ...</div>
+
+    <p class="section-label">dependencies/auth.py — JWT guard</p>
+    <div class="code"><span class="comment"># dependencies/auth.py</span>
+<span class="keyword">from</span> fastapi.security <span class="keyword">import</span> OAuth2PasswordBearer
+<span class="keyword">from</span> jose <span class="keyword">import</span> jwt, JWTError
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl=<span class="string">"/auth/login"</span>)
+
+<span class="keyword">async def</span> get_current_user(
+    token: str = Depends(oauth2_scheme),
+    redis = Depends(get_redis),
+    db = Depends(get_db)
+):
+    <span class="comment"># Check Redis blacklist first (logout support)</span>
+    <span class="keyword">if await</span> redis.get(<span class="string">f"blacklist:{token}"</span>):
+        <span class="keyword">raise</span> HTTPException(<span class="string">401</span>, <span class="string">"Token revoked"</span>)
+    <span class="keyword">try</span>:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[<span class="string">"HS256"</span>])
+        user_id = payload.get(<span class="string">"sub"</span>)
+    <span class="keyword">except</span> JWTError:
+        <span class="keyword">raise</span> HTTPException(<span class="string">401</span>, <span class="string">"Invalid token"</span>)
+    <span class="keyword">return await</span> user_service.get(db, user_id)
+
+require_auth = Depends(get_current_user)</div>
+
+    <p class="section-label">dependencies/rate_limit.py</p>
+    <div class="code"><span class="keyword">async def</span> rate_limit(request: Request, redis = Depends(get_redis)):
+    key = <span class="string">f"rl:{request.client.host}"</span>
+    count = <span class="keyword">await</span> redis.incr(key)
+    <span class="keyword">if</span> count == <span class="string">1</span>: <span class="keyword">await</span> redis.expire(key, <span class="string">60</span>)
+    <span class="keyword">if</span> count > <span class="string">100</span>:
+        <span class="keyword">raise</span> HTTPException(<span class="string">429</span>, <span class="string">"Rate limit exceeded"</span>)
+
+<span class="comment"># Use as dependency on any endpoint:</span>
+<span class="decorator">@router.post("/", dependencies=[Depends(rate_limit)])</span></div>
+  </div>
+
+  <!-- DATABASE -->
+  <div id="database" class="section">
+    <p class="section-label">PostgreSQL Tables</p>
+    <div class="db-grid">
+      <div class="db-table">
+        <div class="db-head">users</div>
+        <div class="db-field"><span class="db-pk">id</span> <span class="db-type">uuid PK</span></div>
+        <div class="db-field">username <span class="db-type">varchar unique</span></div>
+        <div class="db-field">email <span class="db-type">varchar unique</span></div>
+        <div class="db-field">password_hash <span class="db-type">text</span></div>
+        <div class="db-field">avatar_url <span class="db-type">text</span></div>
+        <div class="db-field">bio <span class="db-type">text</span></div>
+        <div class="db-field">created_at <span class="db-type">timestamp</span></div>
+      </div>
+      <div class="db-table">
+        <div class="db-head">prompts</div>
+        <div class="db-field"><span class="db-pk">id</span> <span class="db-type">uuid PK</span></div>
+        <div class="db-field"><span class="db-fk">user_id</span> <span class="db-type">uuid FK</span></div>
+        <div class="db-field">title <span class="db-type">varchar</span></div>
+        <div class="db-field">prompt_text <span class="db-type">text</span></div>
+        <div class="db-field">tags <span class="db-type">text[]</span></div>
+        <div class="db-field">model_used <span class="db-type">varchar</span></div>
+        <div class="db-field">score <span class="db-type">float</span></div>
+        <div class="db-field">views <span class="db-type">integer default 0</span></div>
+        <div class="db-field">downloads <span class="db-type">integer default 0</span></div>
+        <div class="db-field">created_at <span class="db-type">timestamp</span></div>
+      </div>
+      <div class="db-table">
+        <div class="db-head">images</div>
+        <div class="db-field"><span class="db-pk">id</span> <span class="db-type">uuid PK</span></div>
+        <div class="db-field"><span class="db-fk">prompt_id</span> <span class="db-type">uuid FK</span></div>
+        <div class="db-field">s3_key <span class="db-type">text</span></div>
+        <div class="db-field">s3_url <span class="db-type">text</span></div>
+        <div class="db-field">thumbnail_url <span class="db-type">text</span></div>
+        <div class="db-field">qdrant_id <span class="db-type">uuid</span></div>
+        <div class="db-field">nsfw <span class="db-type">boolean default false</span></div>
+        <div class="db-field">created_at <span class="db-type">timestamp</span></div>
+      </div>
+      <div class="db-table">
+        <div class="db-head">likes</div>
+        <div class="db-field"><span class="db-pk">id</span> <span class="db-type">uuid PK</span></div>
+        <div class="db-field"><span class="db-fk">user_id</span> <span class="db-type">uuid FK</span></div>
+        <div class="db-field"><span class="db-fk">prompt_id</span> <span class="db-type">uuid FK</span></div>
+        <div class="db-field">created_at <span class="db-type">timestamp</span></div>
+      </div>
+      <div class="db-table">
+        <div class="db-head">comments</div>
+        <div class="db-field"><span class="db-pk">id</span> <span class="db-type">uuid PK</span></div>
+        <div class="db-field"><span class="db-fk">user_id</span> <span class="db-type">uuid FK</span></div>
+        <div class="db-field"><span class="db-fk">prompt_id</span> <span class="db-type">uuid FK</span></div>
+        <div class="db-field">body <span class="db-type">text</span></div>
+        <div class="db-field">created_at <span class="db-type">timestamp</span></div>
+      </div>
+      <div class="db-table">
+        <div class="db-head">follows</div>
+        <div class="db-field"><span class="db-fk">follower_id</span> <span class="db-type">uuid FK</span></div>
+        <div class="db-field"><span class="db-fk">following_id</span> <span class="db-type">uuid FK</span></div>
+        <div class="db-field">created_at <span class="db-type">timestamp</span></div>
+      </div>
+      <div class="db-table">
+        <div class="db-head">collections</div>
+        <div class="db-field"><span class="db-pk">id</span> <span class="db-type">uuid PK</span></div>
+        <div class="db-field"><span class="db-fk">user_id</span> <span class="db-type">uuid FK</span></div>
+        <div class="db-field">name <span class="db-type">varchar</span></div>
+        <div class="db-field">is_public <span class="db-type">boolean</span></div>
+        <div class="db-field">created_at <span class="db-type">timestamp</span></div>
+      </div>
+      <div class="db-table">
+        <div class="db-head">collection_prompts</div>
+        <div class="db-field"><span class="db-fk">collection_id</span> <span class="db-type">uuid FK</span></div>
+        <div class="db-field"><span class="db-fk">prompt_id</span> <span class="db-type">uuid FK</span></div>
+        <div class="db-field">added_at <span class="db-type">timestamp</span></div>
+      </div>
+    </div>
+
+    <p class="section-label">SQLAlchemy Async Setup</p>
+    <div class="code"><span class="comment"># database.py</span>
+<span class="keyword">from</span> sqlalchemy.ext.asyncio <span class="keyword">import</span> create_async_engine, AsyncSession
+<span class="keyword">from</span> sqlalchemy.orm <span class="keyword">import</span> sessionmaker
+
+engine = create_async_engine(
+    <span class="string">"postgresql+asyncpg://user:pass@postgres:5432/promptdb"</span>,
+    pool_size=<span class="string">10</span>, max_overflow=<span class="string">20</span>, echo=<span class="string">False</span>
+)
+
+AsyncSessionLocal = sessionmaker(engine, class_=AsyncSession,
+                                  expire_on_commit=<span class="string">False</span>)
+
+<span class="keyword">async def</span> get_db():
+    <span class="keyword">async with</span> AsyncSessionLocal() <span class="keyword">as</span> session:
+        <span class="keyword">yield</span> session</div>
+
+    <p class="section-label">Redis — What to Cache</p>
+    <div class="card">
+      <div class="stack-row"><span class="stack-layer">Trending prompts</span><span class="stack-tech">TTL 10 min · key: "trending"</span></div>
+      <div class="stack-row"><span class="stack-layer">Rate limiting</span><span class="stack-tech">Per IP · key: "rl:{ip}" · 100 req/min</span></div>
+      <div class="stack-row"><span class="stack-layer">JWT blacklist</span><span class="stack-tech">key: "blacklist:{token}" · TTL 24h</span></div>
+      <div class="stack-row"><span class="stack-layer">View counts</span><span class="stack-tech">Incr in Redis, batch flush to PG every 5 min</span></div>
+      <div class="stack-row"><span class="stack-layer">User sessions</span><span class="stack-tech">Refresh token store · key: "refresh:{user_id}"</span></div>
+    </div>
+
+    <p class="section-label">Alembic — DB Migrations</p>
+    <div class="code"><span class="comment"># Install</span>
+pip install alembic
+
+<span class="comment"># Init + auto-generate migration</span>
+alembic init alembic
+alembic revision --autogenerate -m <span class="string">"initial schema"</span>
+alembic upgrade head</div>
+
+    <p class="section-label">Qdrant — Vector Search</p>
+    <div class="card card-accent">
+      <div class="card-title">Collection Setup</div>
+      <div class="code" style="margin-top:8px"><span class="comment"># qdrant_client.py</span>
+<span class="keyword">from</span> qdrant_client <span class="keyword">import</span> AsyncQdrantClient
+<span class="keyword">from</span> qdrant_client.models <span class="keyword">import</span> Distance, VectorParams
+
+client = AsyncQdrantClient(host=<span class="string">"qdrant"</span>, port=<span class="string">6333</span>)
+
+<span class="keyword">await</span> client.create_collection(
+    collection_name=<span class="string">"prompt_images"</span>,
+    vectors_config=VectorParams(size=<span class="string">512</span>, distance=Distance.COSINE)
+)</div>
+    </div>
+  </div>
+
+  <!-- S3 STORAGE -->
+  <div id="storage" class="section">
+    <p class="section-label">Upload Flow</p>
+    <div class="flow">
+      <div class="flow-step">
+        <div class="flow-line"><div class="flow-num">1</div><div class="flow-connector"></div></div>
+        <div class="flow-content"><div class="flow-title">React sends multipart/form-data</div><div class="flow-desc">POST /images/upload with UploadFile + prompt_id. FastAPI's python-multipart handles the stream.</div></div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-line"><div class="flow-num">2</div><div class="flow-connector"></div></div>
+        <div class="flow-content"><div class="flow-title">FastAPI validates file</div><div class="flow-desc">Checks content_type ∈ ALLOWED, size ≤ 10 MB, require_auth dependency confirms JWT.</div></div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-line"><div class="flow-num">3</div><div class="flow-connector"></div></div>
+        <div class="flow-content"><div class="flow-title">boto3 uploads to S3</div><div class="flow-desc">Original → <code>originals/{uuid}.png</code>. Pillow thumbnail → <code>thumbnails/{uuid}.png</code>. Both uploaded async via asyncio.to_thread.</div></div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-line"><div class="flow-num">4</div><div class="flow-connector"></div></div>
+        <div class="flow-content"><div class="flow-title">S3 URLs saved to PostgreSQL</div><div class="flow-desc">images table row inserted with s3_url, thumbnail_url, qdrant_id=None (filled later).</div></div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-line"><div class="flow-num">5</div><div class="flow-connector"></div></div>
+        <div class="flow-content"><div class="flow-title">BackgroundTask triggers AI pipeline</div><div class="flow-desc">FastAPI's BackgroundTasks calls classify_and_embed(image.id, s3_url) — no separate service call needed.</div></div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-line"><div class="flow-num">6</div><div class="flow-connector"></div></div>
+        <div class="flow-content"><div class="flow-title">CLIP embedding stored in Qdrant</div><div class="flow-desc">embed router generates 512D vector, upserts to Qdrant collection, updates images.qdrant_id in PG.</div></div>
+      </div>
+    </div>
+
+    <p class="section-label">s3_client.py</p>
+    <div class="code"><span class="comment"># s3_client.py</span>
+<span class="keyword">import</span> boto3, asyncio
+<span class="keyword">from</span> config <span class="keyword">import</span> settings
+
+s3 = boto3.client(<span class="string">"s3"</span>,
+    region_name=settings.AWS_REGION,
+    aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+    aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY
+)
+
+<span class="keyword">async def</span> upload_to_s3(data: bytes, key: str, content_type: str) -> str:
+    <span class="keyword">await</span> asyncio.to_thread(
+        s3.put_object,
+        Bucket=settings.S3_BUCKET_NAME,
+        Key=key,
+        Body=data,
+        ContentType=content_type,
+    )
+    <span class="keyword">return</span> <span class="string">f"https://{settings.S3_BUCKET_NAME}.s3.{settings.AWS_REGION}.amazonaws.com/{key}"</span>
+
+<span class="keyword">async def</span> delete_from_s3(key: str):
+    <span class="keyword">await</span> asyncio.to_thread(s3.delete_object,
+        Bucket=settings.S3_BUCKET_NAME, Key=key)</div>
+
+    <p class="section-label">S3 Bucket Structure</p>
+    <div class="code"><span class="keyword">prompt-platform-images/</span>
+├── <span class="string">originals/</span>
+│   └── {uuid}.png
+└── <span class="string">thumbnails/</span>
+    └── {uuid}.png
+
+<span class="comment"># Region: ap-south-1 (Mumbai) — lowest latency from Raipur</span></div>
+
+    <p class="section-label">config.py — Settings via pydantic-settings</p>
+    <div class="code"><span class="keyword">from</span> pydantic_settings <span class="keyword">import</span> BaseSettings
+
+<span class="keyword">class</span> Settings(BaseSettings):
+    DATABASE_URL: <span class="type">str</span>
+    REDIS_URL: <span class="type">str</span>
+    SECRET_KEY: <span class="type">str</span>
+    AWS_ACCESS_KEY_ID: <span class="type">str</span>
+    AWS_SECRET_ACCESS_KEY: <span class="type">str</span>
+    AWS_REGION: <span class="type">str</span> = <span class="string">"ap-south-1"</span>
+    S3_BUCKET_NAME: <span class="type">str</span>
+    QDRANT_HOST: <span class="type">str</span> = <span class="string">"qdrant"</span>
+    QDRANT_PORT: <span class="type">int</span> = <span class="string">6333</span>
+
+    <span class="keyword">class</span> Config:
+        env_file = <span class="string">".env"</span>
+
+settings = Settings()</div>
+
+    <p class="section-label">Dev Strategy</p>
+    <div class="card">
+      <div class="stack-row"><span class="stack-layer">Local dev</span><span class="stack-tech">MinIO in Docker (S3-compatible endpoint)</span></div>
+      <div class="stack-row"><span class="stack-layer">Testing / demo</span><span class="stack-tech">AWS S3 free tier (5 GB)</span></div>
+      <div class="stack-row"><span class="stack-layer">Production</span><span class="stack-tech">AWS S3 paid — same code, swap env var</span></div>
+    </div>
+  </div>
+
+  <!-- AI SERVICES -->
+  <div id="ai" class="section">
+
+    <p class="section-label">AI Models (No GPU Required)</p>
+    <div class="card">
+      <div class="stack-row"><span class="stack-layer">Embeddings</span><span class="stack-tech">CLIP ViT-B/32 (open_clip_torch)</span></div>
+      <div class="stack-row"><span class="stack-layer">Classification</span><span class="stack-tech">MobileNetV3 / EfficientNet-lite (torchvision)</span></div>
+      <div class="stack-row"><span class="stack-layer">NSFW Detection</span><span class="stack-tech">Yahoo Open NSFW (ONNX) / NudeNet fallback</span></div>
+      <div class="stack-row"><span class="stack-layer">Text search</span><span class="stack-tech">CLIP text encoder → same 512D space</span></div>
+    </div>
+
+    <p class="section-label">routers/ai/embed.py — CLIP Embedding</p>
+    <div class="code"><span class="keyword">import</span> open_clip, torch
+<span class="keyword">from</span> PIL <span class="keyword">import</span> Image
+<span class="keyword">import</span> io, httpx
+
+router = APIRouter(tags=[<span class="string">"ai"</span>])
+
+<span class="comment"># Load once at startup (lifespan event in main.py)</span>
+model, _, preprocess = open_clip.create_model_and_transforms(
+    <span class="string">"ViT-B-32"</span>, pretrained=<span class="string">"openai"</span>
+)
+model.eval()
+
+<span class="decorator">@router.post("/embed")</span>
+<span class="keyword">async def</span> embed_image(image_url: str, image_id: UUID,
+                      db = Depends(get_db)):
+    <span class="comment"># Fetch image from S3 URL</span>
+    <span class="keyword">async with</span> httpx.AsyncClient() <span class="keyword">as</span> c:
+        r = <span class="keyword">await</span> c.get(image_url)
+    img = preprocess(Image.open(io.BytesIO(r.content))).unsqueeze(<span class="string">0</span>)
+
+    <span class="keyword">with</span> torch.no_grad():
+        embedding = model.encode_image(img).squeeze().tolist()
+
+    <span class="comment"># Upsert to Qdrant</span>
+    qdrant_id = str(uuid4())
+    <span class="keyword">await</span> qdrant.upsert(<span class="string">"prompt_images"</span>, points=[
+        PointStruct(id=qdrant_id, vector=embedding,
+                    payload={<span class="string">"image_id"</span>: str(image_id)})
+    ])
+
+    <span class="comment"># Save qdrant_id back to PG</span>
+    <span class="keyword">await</span> image_service.set_qdrant_id(db, image_id, qdrant_id)
+    <span class="keyword">return</span> {<span class="string">"qdrant_id"</span>: qdrant_id}</div>
+
+    <p class="section-label">routers/ai/search.py — Semantic Search</p>
+    <div class="code"><span class="decorator">@router.post("/search")</span>
+<span class="keyword">async def</span> semantic_search(query: str, limit: int = <span class="string">20</span>):
+    <span class="comment"># Embed text query using CLIP text encoder</span>
+    tokenizer = open_clip.get_tokenizer(<span class="string">"ViT-B-32"</span>)
+    tokens = tokenizer([query])
+    <span class="keyword">with</span> torch.no_grad():
+        text_embedding = model.encode_text(tokens).squeeze().tolist()
+
+    <span class="comment"># Qdrant cosine similarity search</span>
+    results = <span class="keyword">await</span> qdrant.search(
+        collection_name=<span class="string">"prompt_images"</span>,
+        query_vector=text_embedding,
+        limit=limit
+    )
+    image_ids = [r.payload[<span class="string">"image_id"</span>] <span class="keyword">for</span> r <span class="keyword">in</span> results]
+    <span class="keyword">return</span> {<span class="string">"image_ids"</span>: image_ids, <span class="string">"scores"</span>: [r.score <span class="keyword">for</span> r <span class="keyword">in</span> results]}
+
+<span class="decorator">@router.post("/similar-images")</span>
+<span class="keyword">async def</span> similar_images(image_id: UUID, limit: int = <span class="string">10</span>,
+                          db = Depends(get_db)):
+    image = <span class="keyword">await</span> image_service.get(db, image_id)
+    results = <span class="keyword">await</span> qdrant.search(<span class="string">"prompt_images"</span>,
+        query_vector=<span class="keyword">await</span> get_vector_by_qdrant_id(image.qdrant_id),
+        limit=limit)
+    <span class="keyword">return</span> results</div>
+
+    <p class="section-label">routers/ai/classify.py — Auto-tagging</p>
+    <div class="code"><span class="decorator">@router.post("/classify")</span>
+<span class="keyword">async def</span> classify_image(image_url: str, prompt_id: UUID,
+                          db = Depends(get_db)):
+    <span class="comment"># Download + run MobileNetV3</span>
+    tags = <span class="keyword">await</span> run_classifier(image_url)
+    quality_score = <span class="keyword">await</span> score_quality(image_url)
+    <span class="comment"># Append tags to prompts.tags array in PG</span>
+    <span class="keyword">await</span> prompt_service.add_tags(db, prompt_id, tags)
+    <span class="keyword">return</span> {<span class="string">"tags"</span>: tags, <span class="string">"quality_score"</span>: quality_score}</div>
+
+    <p class="section-label">routers/ai/moderate.py — NSFW Filter</p>
+    <div class="code"><span class="decorator">@router.post("/moderate")</span>
+<span class="keyword">async def</span> moderate_image(image_url: str, image_id: UUID,
+                          db = Depends(get_db)):
+    is_nsfw = <span class="keyword">await</span> run_nsfw_model(image_url)  <span class="comment"># Yahoo NSFW ONNX</span>
+    <span class="keyword">if</span> is_nsfw:
+        <span class="keyword">await</span> image_service.flag_nsfw(db, image_id)
+        <span class="comment"># Optional: auto-delete from S3</span>
+    <span class="keyword">return</span> {<span class="string">"nsfw"</span>: is_nsfw}</div>
+
+    <p class="section-label">Model Loading — Lifespan Events</p>
+    <div class="code"><span class="comment"># main.py — load models once at startup, share via app.state</span>
+<span class="keyword">from</span> contextlib <span class="keyword">import</span> asynccontextmanager
+
+<span class="decorator">@asynccontextmanager</span>
+<span class="keyword">async def</span> lifespan(app: FastAPI):
+    <span class="comment"># Startup: load models into memory</span>
+    app.state.clip_model, _, app.state.clip_preprocess = \
+        open_clip.create_model_and_transforms(<span class="string">"ViT-B-32"</span>, pretrained=<span class="string">"openai"</span>)
+    app.state.clip_model.eval()
+    <span class="keyword">yield</span>
+    <span class="comment"># Shutdown: cleanup if needed</span>
+
+app = FastAPI(lifespan=lifespan)</div>
+
+    <p class="section-label">requirements.txt</p>
+    <div class="code">fastapi>=0.115
+uvicorn[standard]>=0.30
+sqlalchemy[asyncio]>=2.0
+asyncpg
+alembic
+redis[asyncio]
+python-jose[cryptography]
+passlib[bcrypt]
+python-multipart
+boto3
+open-clip-torch
+torchvision
+Pillow
+qdrant-client[asyncio]
+httpx
+pydantic-settings</div>
+  </div>
+
+  <!-- API REFERENCE -->
+  <div id="apis" class="section">
+    <p class="section-label">Auth</p>
+    <div class="endpoint"><span class="method method-post">POST</span><span class="endpoint-path">/auth/signup</span></div>
+    <div class="endpoint"><span class="method method-post">POST</span><span class="endpoint-path">/auth/login</span></div>
+    <div class="endpoint"><span class="method method-post">POST</span><span class="endpoint-path">/auth/logout</span><span class="endpoint-note">🔒 auth</span></div>
+    <div class="endpoint"><span class="method method-post">POST</span><span class="endpoint-path">/auth/refresh</span></div>
+
+    <p class="section-label">Prompts</p>
+    <div class="endpoint"><span class="method method-post">POST</span><span class="endpoint-path">/prompts</span><span class="endpoint-note">🔒 auth</span></div>
+    <div class="endpoint"><span class="method method-get">GET</span><span class="endpoint-path">/prompts?page=1&limit=20&category=anime</span></div>
+    <div class="endpoint"><span class="method method-get">GET</span><span class="endpoint-path">/prompts/trending</span><span class="endpoint-note">Redis TTL 10m</span></div>
+    <div class="endpoint"><span class="method method-get">GET</span><span class="endpoint-path">/prompts/{id}</span></div>
+    <div class="endpoint"><span class="method method-delete">DEL</span><span class="endpoint-path">/prompts/{id}</span><span class="endpoint-note">🔒 auth + owner</span></div>
+
+    <p class="section-label">Images (S3)</p>
+    <div class="endpoint"><span class="method method-post">POST</span><span class="endpoint-path">/images/upload</span><span class="endpoint-note">multipart · 🔒</span></div>
+    <div class="endpoint"><span class="method method-delete">DEL</span><span class="endpoint-path">/images/{id}</span><span class="endpoint-note">🔒 owner</span></div>
+
+    <p class="section-label">Social</p>
+    <div class="endpoint"><span class="method method-post">POST</span><span class="endpoint-path">/like/{prompt_id}</span><span class="endpoint-note">toggle</span></div>
+    <div class="endpoint"><span class="method method-post">POST</span><span class="endpoint-path">/comment/{prompt_id}</span></div>
+    <div class="endpoint"><span class="method method-delete">DEL</span><span class="endpoint-path">/comment/{id}</span></div>
+    <div class="endpoint"><span class="method method-post">POST</span><span class="endpoint-path">/follow/{user_id}</span><span class="endpoint-note">toggle</span></div>
+
+    <p class="section-label">Collections</p>
+    <div class="endpoint"><span class="method method-post">POST</span><span class="endpoint-path">/collections</span></div>
+    <div class="endpoint"><span class="method method-get">GET</span><span class="endpoint-path">/collections/{id}</span></div>
+    <div class="endpoint"><span class="method method-post">POST</span><span class="endpoint-path">/collections/{id}/prompts/{prompt_id}</span></div>
+    <div class="endpoint"><span class="method method-delete">DEL</span><span class="endpoint-path">/collections/{id}/prompts/{prompt_id}</span></div>
+
+    <p class="section-label">Users</p>
+    <div class="endpoint"><span class="method method-get">GET</span><span class="endpoint-path">/users/{id}</span></div>
+    <div class="endpoint"><span class="method method-get">GET</span><span class="endpoint-path">/users/{id}/prompts</span></div>
+    <div class="endpoint"><span class="method method-patch">PATCH</span><span class="endpoint-path">/users/me</span><span class="endpoint-note">🔒 auth</span></div>
+
+    <p class="section-label">AI Services (same app, /ai prefix)</p>
+    <div class="endpoint"><span class="method method-post">POST</span><span class="endpoint-path">/ai/classify</span><span class="endpoint-note">BackgroundTask</span></div>
+    <div class="endpoint"><span class="method method-post">POST</span><span class="endpoint-path">/ai/embed</span><span class="endpoint-note">CLIP 512D</span></div>
+    <div class="endpoint"><span class="method method-post">POST</span><span class="endpoint-path">/ai/search</span><span class="endpoint-note">text → vector</span></div>
+    <div class="endpoint"><span class="method method-post">POST</span><span class="endpoint-path">/ai/similar-images</span><span class="endpoint-note">Qdrant cosine</span></div>
+    <div class="endpoint"><span class="method method-post">POST</span><span class="endpoint-path">/ai/moderate</span><span class="endpoint-note">NSFW detect</span></div>
+
+    <p class="section-label">Auto Docs</p>
+    <div class="card" style="background: var(--teal-light); border-color: var(--teal);">
+      <div class="card-desc" style="color: var(--teal);">FastAPI auto-generates interactive docs at <strong>/docs</strong> (Swagger UI) and <strong>/redoc</strong>. All endpoints, schemas, and auth are documented automatically from your Pydantic models and type hints — zero extra work.</div>
+    </div>
+  </div>
+
+  <!-- PHASES -->
+  <div id="phases" class="section">
+    <div class="phase">
+      <div class="phase-header">
+        <div>
+          <div class="phase-num" style="color:var(--purple)">PHASE 1</div>
+          <div class="phase-title">Core MVP</div>
+        </div>
+        <div class="phase-tag"><span class="badge badge-purple">Start here</span></div>
+      </div>
+      <div class="card card-accent" style="margin-bottom:14px">
+        <div class="card-desc">One FastAPI app, one PostgreSQL, one Redis. No AI, no Qdrant yet. Get auth + upload + listing + social working end-to-end first. Ship something real.</div>
+      </div>
+      <ul class="checklist">
+        <li>FastAPI project structure + Docker Compose</li>
+        <li>Auth router (signup / login / JWT / logout)</li>
+        <li>Prompts router (create / list / detail / delete)</li>
+        <li>S3 upload via python-multipart + boto3</li>
+        <li>Likes and comments (social router)</li>
+        <li>Engagement-ranked hero feed</li>
+        <li>Full-text search (PostgreSQL tsvector)</li>
+        <li>User profiles router</li>
+        <li>Redis rate limiting + trending cache</li>
+        <li>Nginx reverse proxy config</li>
+      </ul>
+    </div>
+
+    <div class="phase">
+      <div class="phase-header">
+        <div>
+          <div class="phase-num" style="color:var(--teal)">PHASE 2</div>
+          <div class="phase-title">AI Features</div>
+        </div>
+        <div class="phase-tag"><span class="badge badge-teal">After MVP works</span></div>
+      </div>
+      <ul class="checklist">
+        <li>CLIP model loading via lifespan event</li>
+        <li>embed router — image → 512D vector → Qdrant</li>
+        <li>classify router — MobileNet auto-tagging</li>
+        <li>moderate router — Yahoo NSFW ONNX filter</li>
+        <li>search router — text → vector → Qdrant cosine</li>
+        <li>similar-images endpoint on prompt detail page</li>
+        <li>BackgroundTasks AI pipeline on upload</li>
+        <li>Qdrant Docker service added to Compose</li>
+      </ul>
+    </div>
+
+    <div class="phase">
+      <div class="phase-header">
+        <div>
+          <div class="phase-num" style="color:var(--coral)">PHASE 3</div>
+          <div class="phase-title">Scale &amp; Polish</div>
+        </div>
+        <div class="phase-tag"><span class="badge badge-coral">Later</span></div>
+      </div>
+      <ul class="checklist">
+        <li>Gunicorn + multiple Uvicorn workers (CPU bound AI)</li>
+        <li>Celery + Redis broker for async AI job queue</li>
+        <li>CDN (CloudFront) in front of S3</li>
+        <li>S3 signed URLs for private images</li>
+        <li>Collections / Pinterest folders</li>
+        <li>OAuth2 (Google sign-in)</li>
+        <li>Docker Swarm / Kubernetes</li>
+        <li>Prometheus + Grafana monitoring</li>
+      </ul>
+    </div>
+
+    <div class="warn-card" style="background: var(--amber-light); border: 1px solid var(--amber);">
+      <div class="card-title" style="color:var(--amber)">⚠ One process, not microservices</div>
+      <div class="card-desc" style="color:#c8952a; margin-top:6px">By going all-FastAPI you eliminated the Node.js↔FastAPI HTTP calls entirely. The AI functions are just Python imports inside the same process. Splitting into microservices later is still possible (each router becomes its own FastAPI app) — but don't do it now.</div>
+    </div>
+
+    <p class="section-label">Docker Compose Services</p>
+    <div class="code"><span class="keyword">services:</span>
+  <span class="string">frontend</span>     <span class="comment"># React (nginx:alpine)</span>
+  <span class="string">backend</span>      <span class="comment"># FastAPI — ALL routers: auth, prompts, social, ai/*</span>
+  <span class="string">postgres</span>     <span class="comment"># PostgreSQL 16</span>
+  <span class="string">redis</span>        <span class="comment"># Redis 7</span>
+  <span class="string">qdrant</span>       <span class="comment"># Qdrant (add in Phase 2)</span>
+  <span class="string">nginx</span>        <span class="comment"># Reverse proxy → frontend + /api → backend</span>
+
+<span class="comment"># Phase 3 additions:</span>
+  <span class="string">celery-worker</span>  <span class="comment"># Same image as backend, CMD: celery worker</span>
+  <span class="string">flower</span>         <span class="comment"># Celery monitoring UI</span></div>
+  </div>
+
+</div>
+
+<script>
+function show(id, el) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  el.classList.add('active');
+}
+</script>
+</body>
+</html>
