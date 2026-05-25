@@ -1,142 +1,80 @@
-from fastapi import APIRouter
-from fastapi import Depends
+## router/auth.py
 
-from sqlalchemy.orm import Session
-
-from app.dependencies import get_db
-from app.schemas.auth import UserSignup
-from app.services.auth_service import create_user
+from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordRequestForm
+from sqlalchemy.ext.asyncio import AsyncSession
+from redis.asyncio import Redis # Import Redis type hint
 
 
+from app.database import get_db
+from redis_client import get_redis # Import the dependency
+from app.schemas.auth import UserCreate, TokenResponse
+from app.services import auth_service
+from app.dependencies.auth import get_current_user
+from app.models.user import User
 
-from fastapi import APIRouter
-from fastapi import Depends
-from fastapi import HTTPException
+router = APIRouter(tags=["auth"])
+from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordRequestForm ,OAuth2PasswordBearer
+from sqlalchemy.ext.asyncio import AsyncSession
+from redis.asyncio import Redis # Import Redis type hint
 
-from sqlalchemy.orm import Session
-
-from app.dependencies import get_db
-
-from app.schemas.auth import UserSignup
-from app.schemas.auth import UserLogin
-
-from app.services.auth_service import (
-    create_user,
-    authenticate_user
-)
-
-from app.core.jwt_handler import create_access_token
-from app.core.current_user import get_current_user
-
-
-
-router = APIRouter(
-    prefix="/auth",
-    tags=["Auth"]
-)
+from app.database import get_db
+from redis_client import get_redis # Import the dependency
+from app.schemas.auth import UserCreate, TokenResponse
+from app.services import auth_service
+from app.dependencies.auth import get_current_user
+from app.models.user import User
 
 
-# @router.post("/signup")
-# def signup(
-#     user_data: UserSignup,
-#     db: Session = Depends(get_db)
-# ):
-#     user = create_user(db, user_data)
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
-#     return {
-#         "message": "User created",
-#         "user_id": str(user.id)
-#     }
+@router.post("/signup", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
+async def signup(body: UserCreate, db: AsyncSession = Depends(get_db)):
+    # Calls the service to hash the password and save the user
+    user = await auth_service.create_user(db, body)
+    
+    # Immediately log them in by returning a token
+    return auth_service.generate_tokens(user)
 
-
-
-#  Adding login Route
-from fastapi import HTTPException
-
-from app.schemas.auth import UserLogin
-from app.services.auth_service import authenticate_user
-from app.core.jwt_handler import create_access_token
-
-
-@router.post("/login")
-def login(
-    user_data: UserLogin,
-    db: Session = Depends(get_db)
+@router.post("/login", response_model=TokenResponse)
+async def login(
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    db: AsyncSession = Depends(get_db)
 ):
-    user = authenticate_user(
-        db,
-        user_data
-    )
-
+    # Validates credentials against the DB
+    user = await auth_service.authenticate_user(db, form_data.username, form_data.password)
+    
     if not user:
         raise HTTPException(
-            status_code=401,
-            detail="Invalid credentials"
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
         )
+        
+    return auth_service.generate_tokens(user)
 
-    token = create_access_token({
-        "user_id": str(user.id)
-    })
 
+
+@router.get("/me", tags=["users"])
+async def get_my_profile(current_user: User = Depends(get_current_user)):
+    """
+    Test endpoint to verify the JWT token works. 
+    Returns the currently logged-in user's details.
+    """
     return {
-        "access_token": token,
-        "token_type": "bearer"
-    }
-
-router = APIRouter(
-    prefix="/auth",
-    tags=["Auth"]
-)
-
-
-# SIGNUP
-@router.post("/signup")
-def signup(
-    user_data: UserSignup,
-    db: Session = Depends(get_db)
-):
-    user = create_user(db, user_data)
-
-    return {
-        "message": "User created",
-        "user_id": str(user.id)
-    }
-
-
-# LOGIN
-@router.post("/login")
-def login(
-    user_data: UserLogin,
-    db: Session = Depends(get_db)
-):
-    user = authenticate_user(
-        db,
-        user_data
-    )
-
-    if not user:
-        raise HTTPException(
-            status_code=401,
-            detail="Invalid credentials"
-        )
-
-    token = create_access_token({
-        "user_id": str(user.id)
-    })
-
-    return {
-        "access_token": token,
-        "token_type": "bearer"
-    }
-
-
-# CURRENT USER
-@router.get("/me")
-def get_me(
-    current_user = Depends(get_current_user)
-):
-    return {
-        "id": str(current_user.id),
+        "id": current_user.id,
         "username": current_user.username,
         "email": current_user.email
     }
+
+@router.post("/logout")
+async def logout(
+    current_user: User = Depends(get_current_user),
+    token: str = Depends(oauth2_scheme), # We need the raw token string
+    redis: Redis = Depends(get_redis)
+):
+    # Blacklist the token in Redis. 
+    # Set the expiration to match your JWT expiration (e.g., 3600 seconds for 60 mins)
+    await redis.setex(f"blacklist:{token}", 3600, "1")
+    return {"detail": "Successfully logged out"}

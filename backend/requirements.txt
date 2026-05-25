@@ -20,3 +20,9 @@ python-dotenv
 python-jose
 bcrypt==4.0.1
 email-validator
+
+pyjwt
+
+asyncpg
+
+redis[asyncio]
