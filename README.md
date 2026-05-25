@@ -1,4 +1,16 @@
 # promptgram
+
+Completed the authorisation setup using cookies
+
+
+
+
+
+
+
+
+
+
 terminal 
 
 docker run --name postgres-db ^
