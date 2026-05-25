@@ -25,7 +25,7 @@ from app.schemas.auth import UserCreate, TokenResponse
 from app.services import auth_service
 from app.dependencies.auth import get_current_user
 from app.models.user import User
-
+from app.config import settings
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
@@ -55,12 +55,12 @@ async def login(
         
     tokens = auth_service.generate_tokens(user)
 
-        # ✅ Set token in cookie automatically
+    # ✅ Set token in cookie automatically
     response.set_cookie(
         key="access_token",
         value=f"Bearer {tokens['access_token']}",
         httponly=True,      # JS can't read it (XSS protection)
-        secure=False,       # Set True in production (HTTPS only)
+        secure=settings.ENVIRONMENT == "production",     # Set True in production (HTTPS only)
         samesite="lax"
     )
     return tokens
@@ -90,7 +90,7 @@ async def logout(
     
     if token:
         clean_token = token.replace("Bearer ", "")
-        await redis.setex(f"blacklist:{clean_token}", 3600, "1")
+        await redis.setex(f"blacklist:{clean_token}", settings.ACCESS_TOKEN_EXPIRE_MINUTES, "1")
     
     # ✅ options must match exactly how it was set
     response.delete_cookie(

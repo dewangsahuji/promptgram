@@ -1,41 +1,67 @@
 ## router/prompts.py
 
-from fastapi import APIRouter, Depends, HTTPException, status , Response , Request
-from fastapi.security import OAuth2PasswordRequestForm
+import uuid
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from redis.asyncio import Redis # Import Redis type hint
-
-
+from typing import List , Optional
 from app.database import get_db
-from redis_client import get_redis # Import the dependency
-from app.schemas.auth import UserCreate, TokenResponse
-from app.services import auth_service
 from app.dependencies.auth import get_current_user
 from app.models.user import User
+from app.schemas.prompt import PromptCreate, PromptOut
+from app.services import prompt_service
 
 router = APIRouter(tags=["prompts"])
-from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordRequestForm ,OAuth2PasswordBearer
-from sqlalchemy.ext.asyncio import AsyncSession
-from redis.asyncio import Redis # Import Redis type hint
 
-from app.database import get_db
-from redis_client import get_redis # Import the dependency
-from app.schemas.auth import UserCreate, TokenResponse
-from app.services import auth_service
-from app.dependencies.auth import get_current_user
-from app.models.user import User
+# ─── CREATE ───────────────────────────────────────────────
+@router.post("/" ,
+             response_model=PromptOut ,
+             status_code=status.HTTP_201_CREATED)
+async def create_prompt(
+    body:PromptCreate,
+    current_user : Depends(get_current_user),
+    db : AsyncSession = Depends(get_db)
+):
+    return await prompt_service.create_prompt(db , current_user.id , body)
 
+# ─── LIST ───────────────────────────────────────────────
+@router.get("/",response_model=List[PromptOut])
+async def list_prompts(
+            page : int = 1,
+            limit : int = 10,
+            db : AsyncSession = Depends(get_db)
+            ):
+    
+    return await prompt_service.get_prompts(db , page ,limit)
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
+# ─── GET ONE ──────────────────────────────────────────────
+@router.get("/{prompt_id}" , response_model=PromptOut)
+async def get_prompt(
+    prompt_id:uuid.UUID,
+    db : AsyncSession = Depends(get_db)
+):
+    prompt = await prompt_service.get_prompt_by_id(db , prompt_id)
 
-@router.post("/prompts")
+    if not prompt:
+        raise HTTPException(status_code=404 , detail="Prompt Not Found")
+    
+    return prompt
 
+# ─── DELETE ───────────────────────────────────────────────
+@router.delete("/{prompt_id}" , status_code=status.HTTP_204_NO_CONTENT)
+async def delete_prompt(
+    prompt_id:uuid.UUID,
+    current_user : User = Depends(get_current_user),
+    db : AsyncSession = Depends(get_db)
+):  
+    prompt = await prompt_service.get_prompt_by_id(db, prompt_id)
 
+    if not prompt:
+        raise HTTPException(status_code=404, detail="Prompt not found")
 
-
-
-
+    if prompt.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not your prompt")  # 🔒 ownership check
+    
+    await prompt_service.delete_prompt(db, prompt)
 
 
 

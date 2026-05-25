@@ -2,6 +2,9 @@ from pydantic_settings import BaseSettings ,SettingsConfigDict
 
 
 class Settings(BaseSettings):
+
+    ENVIRONMENT:str = "testing"
+
     # Database URLs
     REDIS_URL: str
     DATABASE_URL: str
