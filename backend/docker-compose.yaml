@@ -1,0 +1,49 @@
+version: "3.9"
+
+services:
+
+  backend:
+    build: ./backend
+    container_name: fastapi_backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    env_file:
+      - ./backend/.env
+    depends_on:
+      - postgres
+      - redis
+
+  postgres:
+    image: postgres:16
+    container_name: postgres_db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: prompt_platform
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7
+    container_name: redis_cache
+    ports:
+      - "6379:6379"
+
+  minio:
+    image: minio/minio
+    container_name: minio_storage
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+
+volumes:
+  postgres_data:
