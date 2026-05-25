@@ -1,3 +1,6 @@
+# app/models/prompt
+
+
 import uuid
 import datetime
 from typing import List, Optional
@@ -10,7 +13,7 @@ from sqlalchemy.orm import Mapped, mapped_column , relationship
 # Assuming this is your base import based on your snippet
 from app.database import Base
 
-class prompts(Base):
+class Prompt(Base):
     __tablename__="prompts"
 
     id : Mapped[uuid.UUID] = mapped_column(
@@ -69,10 +72,10 @@ class prompts(Base):
     )
 
     # Relationship back to the User
-    user: Mapped["user"] = relationship(back_populates="prompts")
+    user: Mapped["User"] = relationship(back_populates="prompts")
 
     # NEW: Relationship to Images (One-to-Many)
-    image: Mapped[List["image"]] = relationship(
+    images: Mapped[List["Image"]] = relationship(
         back_populates="prompt", 
         cascade="all, delete-orphan"
     )

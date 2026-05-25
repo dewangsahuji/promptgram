@@ -18,7 +18,7 @@ router = APIRouter(tags=["prompts"])
              status_code=status.HTTP_201_CREATED)
 async def create_prompt(
     body:PromptCreate,
-    current_user : Depends(get_current_user),
+    current_user :User = Depends(get_current_user),
     db : AsyncSession = Depends(get_db)
 ):
     return await prompt_service.create_prompt(db , current_user.id , body)

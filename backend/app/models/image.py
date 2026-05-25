@@ -1,3 +1,5 @@
+# app/models/image
+
 import uuid
 import datetime
 from typing import List, Optional
@@ -9,7 +11,7 @@ from sqlalchemy.orm import Mapped, mapped_column , relationship
 
 from app.database import Base
 
-class image(Base):
+class Image(Base):
     __tablename__ = "images"
 
     id : Mapped[uuid.UUID] = mapped_column(
@@ -56,7 +58,7 @@ class image(Base):
         server_default=func.now()
     )
 
-    prompt: Mapped["prompt"] = relationship(back_populates="images")
+    prompt: Mapped["Prompt"] = relationship(back_populates="images")
 
 if __name__ == "__main__":
     print("Model loaded successfully with no syntax errors!")

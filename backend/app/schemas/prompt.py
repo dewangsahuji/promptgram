@@ -20,6 +20,7 @@ class PromptOut(BaseModel):
     id : uuid.UUID
     user_id: uuid.UUID
     title: str
+    prompt_text:str
     tags : Optional[List[str]]
     model_used : Optional[str]
     score : Optional[float]

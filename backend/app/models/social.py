@@ -1,3 +1,6 @@
+# app/models/social
+
+
 from sqlalchemy import Column, Integer, String, ForeignKey , DateTime ,UniqueConstraint ,Text , Boolean
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship

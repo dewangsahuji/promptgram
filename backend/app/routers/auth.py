@@ -11,7 +11,6 @@ from redis_client import get_redis # Import the dependency
 from app.schemas.auth import UserCreate, TokenResponse
 from app.services import auth_service
 from app.dependencies.auth import get_current_user
-from app.models.user import User
 
 router = APIRouter(tags=["auth"])
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -26,6 +25,8 @@ from app.services import auth_service
 from app.dependencies.auth import get_current_user
 from app.models.user import User
 from app.config import settings
+from app.models.prompt import Prompt   # not prompts
+from app.models.image import Image     # not image
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
