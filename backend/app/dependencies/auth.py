@@ -1,33 +1,36 @@
 # dependencies/auth.py
-from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
+import uuid
+from fastapi import Depends, HTTPException, Request
 from jose import jwt, JWTError
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
-from redis.asyncio import Redis
+
+from fastapi import Request
 
 from app.database import get_db
 from redis_client import get_redis
 from app.models.user import User
 from app.config import settings
 
-
-
-SECRET_KEY = settings.JWT_SECRET  # store in .env, never hardcode
+SECRET_KEY = settings.JWT_SECRET
 ALGORITHM = settings.JWT_ALGORITHM
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
-
 async def get_current_user(
-    token: str = Depends(oauth2_scheme),
+    request: Request,          # ✅ Request object to read cookies
     redis=Depends(get_redis),
     db=Depends(get_db)
 ):
-    # 1. Check if token was revoked (logout blacklist in Redis)
+    # 1. Read token from cookie
+    token = request.cookies.get("access_token")
+    if not token:
+        raise HTTPException(401, "Not logged in")
+    
+    token = token.replace("Bearer ", "")  # strip prefix
+
+    # 2. Check if token was revoked
     if await redis.get(f"blacklist:{token}"):
         raise HTTPException(401, "Token revoked")
+    
+    # 3. Decode JWT
     try:
-        # 2. Decode and validate the JWT
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         user_id = payload.get("sub")
         if not user_id:
@@ -35,11 +38,10 @@ async def get_current_user(
     except JWTError:
         raise HTTPException(401, "Could not validate token")
 
-    # 3. Load user from DB
-    user = await db.get(User, uuid.UUID(user_id)) 
+    # 4. Load user from DB
+    user = await db.get(User, uuid.UUID(user_id))
     if not user:
         raise HTTPException(401, "User not found")
     return user
 
-# Alias used across all protected routes
 require_auth = get_current_user
