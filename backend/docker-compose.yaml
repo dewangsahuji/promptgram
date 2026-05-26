@@ -1,19 +1,24 @@
+# promptgram/backend/docker-compose.yaml
+
 version: "3.9"
 
 services:
-
   backend:
     build: ./backend
     container_name: fastapi_backend
     ports:
       - "8000:8000"
     volumes:
+      # NOTE: If your main.py is inside a subfolder (like ./backend/src), 
+      # you will need to update this path so Uvicorn can find it!
       - ./backend:/app
     env_file:
       - ./backend/.env
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy # This fixes the crash-on-startup issue
+      redis:
+        condition: service_started
 
   postgres:
     image: postgres:16
@@ -27,6 +32,11 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d prompt_platform"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7
