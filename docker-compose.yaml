@@ -1,0 +1,44 @@
+services:
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - app-net
+
+  backend:
+    build: ./backend
+    expose:
+      - "8000"          # NOT ports: — only Nginx should reach it
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://user:pass@postgres:5432/db
+      - REDIS_URL=redis://redis:6379
+    networks:
+      - app-net
+
+  frontend:
+    build: ./frontend
+    expose:
+      - "3000"
+    networks:
+      - app-net
+
+  postgres:
+    image: postgres:16
+    networks:
+      - app-net
+
+  redis:
+    image: redis:7-alpine
+    networks:
+      - app-net
+
+networks:
+  app-net:
+    driver: bridge
