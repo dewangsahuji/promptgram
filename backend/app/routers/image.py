@@ -11,7 +11,7 @@ from app.models.user import User
 from app.schemas.image import ImageUploadOut
 from app.services import image_service
 
-router = APIRouter(prefix="/images", tags=["images"])
+router = APIRouter(tags=["images"])
 
 
 # ─── UPLOAD (creates prompt + image together) ─────────────
