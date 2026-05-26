@@ -23,14 +23,21 @@ app.add_middleware(
 
 
 
-# Mount the auth router
-app.include_router(auth.router, prefix="/auth")
-app.include_router(prompts.router , prefix="/prompts")
-app.include_router(social.router)
-app.include_router(image.router, prefix="/images")  # ✅ prefix="/images" is set inside the router
-app.include_router(user.router, prefix="/users")    # prefix="/users"  set inside router
-app.include_router(collection.router, prefix="/collections")  # prefix="/collections"  set inside router
+# # Mount the auth router
+# app.include_router(auth.router, prefix="/auth")
+# app.include_router(prompts.router , prefix="/prompts")
+# app.include_router(social.router)
+# app.include_router(image.router, prefix="/images")  # ✅ prefix="/images" is set inside the router
+# app.include_router(user.router, prefix="/users")    # prefix="/users"  set inside router
+# app.include_router(collection.router, prefix="/collections")  # prefix="/collections"  set inside router
 
+
+app.include_router(auth.router,    prefix="/api/auth")
+app.include_router(prompts.router, prefix="/api/prompts")
+app.include_router(social.router,  prefix="/api")
+app.include_router(image.router,  prefix="/api/images")
+app.include_router(user.router,   prefix="/api/users")
+app.include_router(collection.router, prefix="/api/collections") 
 
 
 @app.get("/health")
