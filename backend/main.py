@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import auth , prompts
+from app.routers import auth , prompts , social , image , user , collection
 from app.database import engine
 from app.database import Base
 
@@ -26,6 +26,12 @@ app.add_middleware(
 # Mount the auth router
 app.include_router(auth.router, prefix="/auth")
 app.include_router(prompts.router , prefix="/prompts")
+app.include_router(social.router)
+app.include_router(image.router, prefix="/images")  # ✅ prefix="/images" is set inside the router
+app.include_router(user.router, prefix="/users")    # prefix="/users"  set inside router
+app.include_router(collection.router, prefix="/collections")  # prefix="/collections"  set inside router
+
+
 
 @app.get("/health")
 async def health_check():
@@ -33,4 +39,4 @@ async def health_check():
 
 @app.get("/")
 async def start():
-    return {"Api is running"}
+    return {"message": "Api is running"}

@@ -6,7 +6,7 @@ COPY requirements.txt .
 
 RUN pip install --no-cache-dir -r requirements.txt
 RUN uv pip install asyncpg
-
+RUN uv pip install python-magic-bin
 
 COPY . .
 

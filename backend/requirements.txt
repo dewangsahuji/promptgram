@@ -26,3 +26,6 @@ pyjwt
 asyncpg
 
 redis[asyncio]
+python-magic-bin
+
+
