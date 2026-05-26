@@ -4,7 +4,8 @@ import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from fastapi import HTTPException, status
-from typing import Optional
+from typing import Optional , List
+from sqlalchemy import func
 
 from app.models.prompt import Prompt
 from app.schemas.prompt import PromptCreate
@@ -74,5 +75,22 @@ async def delete_prompt(
 
 
 
-
-
+# ─── FULL-TEXT SEARCH ─────────────────────────────────────
+async def search_prompts(
+    db: AsyncSession,
+    query: str,
+    page: int = 1,
+    limit: int = 20
+) -> List[Prompt]:
+    offset = (page - 1) * limit
+    ts_query = func.plainto_tsquery("english", query)
+    
+    # ✅ Query the Computed column directly so Postgres uses your GIN index!
+    result = await db.execute(
+        select(Prompt)
+        .where(Prompt.search_vector.op("@@")(ts_query))
+        .order_by(func.ts_rank(Prompt.search_vector, ts_query).desc())
+        .offset(offset)
+        .limit(limit)
+    )
+    return result.scalars().all()
