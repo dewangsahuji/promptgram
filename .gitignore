@@ -2,3 +2,7 @@
 _pycache__/
 *.pyc
 .env
+
+alembic/versions/__pycache__/
+*.db
+*.sqlite3
