@@ -3,14 +3,21 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.routers import auth , prompts , social , image , user , collection
 from app.database import engine
 from app.database import Base
+from contextlib import asynccontextmanager
 
-app = FastAPI(title="Prompt Platform API", version="1.0" , root_path="/api")
 
+app = FastAPI(
+    title="Prompt Platform API",
+    version="1.0",
+    root_path="/api",
+)
 
-@app.on_event("startup")
-async def on_startup():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+    yield
+
 
 # Setup CORS for your React frontend
 app.add_middleware(
@@ -21,13 +28,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(auth.router,    prefix="/api/auth")
-app.include_router(prompts.router, prefix="/api/prompts")
-app.include_router(social.router,  prefix="/api")
-app.include_router(image.router,  prefix="/api/images")
-app.include_router(user.router,   prefix="/api/users")
-app.include_router(collection.router, prefix="/api/collections") 
-
+app.include_router(auth.router, prefix="/auth")
+app.include_router(prompts.router, prefix="/prompts")
+app.include_router(social.router)
+app.include_router(image.router, prefix="/images")
+app.include_router(user.router, prefix="/users")
+app.include_router(collection.router, prefix="/collections")
 
 @app.get("/health")
 async def health_check():
