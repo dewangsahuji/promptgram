@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import auth , prompts , social
+from app.routers import auth , prompts , social , image
 from app.database import engine
 from app.database import Base
 
@@ -27,6 +27,8 @@ app.add_middleware(
 app.include_router(auth.router, prefix="/auth")
 app.include_router(prompts.router , prefix="/prompts")
 app.include_router(social.router)
+app.include_router(image.router)  # ✅ prefix="/images" is set inside the router
+
 
 
 @app.get("/health")
@@ -35,4 +37,4 @@ async def health_check():
 
 @app.get("/")
 async def start():
-    return {"Api is running"}
+    return {"message": "Api is running"}
