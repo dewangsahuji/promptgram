@@ -12,6 +12,28 @@ from app.services import prompt_service
 
 router = APIRouter(tags=["prompts"])
 
+# ─── SEARCH ───────────────────────────────────────────────
+# ✅ Must be defined BEFORE /{prompt_id} — otherwise FastAPI
+#    matches "search" as a UUID and returns a 422 error
+@router.get("/search", response_model=List[PromptOut])
+async def search_prompts(
+    q: str,
+    page: int = 1,
+    limit: int = 20,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Full-text search over prompt titles and text.
+    Usage: GET /prompts/search?q=cyberpunk+samurai
+    Results are ranked by relevance (title matches rank higher than body matches).
+    """
+    if not q.strip():
+        raise HTTPException(status_code=400, detail="Search query cannot be empty")
+ 
+    return await prompt_service.search_prompts(db, q, page, limit)
+
+
+
 # ─── CREATE ───────────────────────────────────────────────
 @router.post("/" ,
              response_model=PromptOut ,
