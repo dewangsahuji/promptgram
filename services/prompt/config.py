@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     # Optional: set this to use MinIO or another S3-compatible endpoint locally
     # e.g. S3_ENDPOINT_URL=http://minio:9000
     S3_ENDPOINT_URL: str | None = None
+    # AI service URL for background pipeline calls
+    AI_SERVICE_URL: str = "http://ai-service:8004"
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

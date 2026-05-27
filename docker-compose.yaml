@@ -1,6 +1,5 @@
 
 
-
 services:
 
   # ─── API Gateway ────────────────────────────────────────────────────────────
@@ -17,6 +16,8 @@ services:
       prompt-service:
         condition: service_healthy
       social-service:
+        condition: service_healthy
+      ai-service:
         condition: service_healthy
     restart: unless-stopped
     networks:
@@ -99,6 +100,31 @@ services:
     networks:
       - promptgram_net
 
+  # ─── AI Service ──────────────────────────────────────────────────────────────
+  ai-service:
+    build:
+      context: ./services/ai
+      dockerfile: Dockerfile
+    container_name: promptgram_ai
+    ports:
+      - "8004:8004"
+    env_file:
+      - ./services/ai/.env
+    depends_on:
+      qdrant:
+        condition: service_healthy
+      prompt-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8004/health')"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 90s   # ML models take time to load
+    restart: unless-stopped
+    networks:
+      - promptgram_net
+
   # ─── PostgreSQL (shared instance, one DB per service) ────────────────────────
   postgres:
     image: postgres:16
@@ -107,7 +133,7 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
-      POSTGRES_DB: postgres          # default db; each service creates its own
+      POSTGRES_DB: postgres
     ports:
       - "5432:5432"
     volumes:
@@ -135,6 +161,24 @@ services:
     networks:
       - promptgram_net
 
+  # ─── Qdrant (vector DB for CLIP embeddings) ──────────────────────────────────
+  qdrant:
+    image: qdrant/qdrant:v1.9.0
+    container_name: promptgram_qdrant
+    ports:
+      - "6333:6333"   # REST / gRPC API
+      - "6334:6334"   # Web UI
+    volumes:
+      - qdrant_data:/qdrant/storage
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:6333/healthz || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - promptgram_net
+
   # ─── MinIO (S3-compatible local dev storage) ─────────────────────────────────
   minio:
     image: minio/minio
@@ -154,6 +198,7 @@ services:
 volumes:
   postgres_data:
   minio_data:
+  qdrant_data:
 
 networks:
   promptgram_net:

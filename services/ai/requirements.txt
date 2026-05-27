@@ -1,0 +1,14 @@
+fastapi
+uvicorn[standard]
+httpx
+pydantic-settings
+python-dotenv
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.2.2+cpu
+torchvision==0.17.2+cpu
+open-clip-torch
+qdrant-client[asyncio]
+nudenet
+Pillow
+python-jose[cryptography]
+onnxruntime
