@@ -1,3 +1,6 @@
+# app/models/social
+
+
 from sqlalchemy import Column, Integer, String, ForeignKey , DateTime ,UniqueConstraint ,Text , Boolean
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
@@ -121,7 +124,7 @@ class Collection(Base):
     )
 
     # Relationships
-    # prompts: Mapped[List["CollectionPrompt"]] = relationship(back_populates="collection", cascade="all, delete-orphan")
+    prompts: Mapped[List["CollectionPrompt"]] = relationship(back_populates="collection", cascade="all, delete-orphan")
 
 
 class CollectionPrompt(Base):
@@ -140,6 +143,9 @@ class CollectionPrompt(Base):
         server_default=func.now()
     )
 
+    # ✅ Relationships needed for serialization
+    collection: Mapped["Collection"] = relationship(back_populates="prompts")
+    prompt: Mapped["Prompt"] = relationship()
 
 if __name__ == "__main__":
     print("Model loaded successfully with no syntax errors!")

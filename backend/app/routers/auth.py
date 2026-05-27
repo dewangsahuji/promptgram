@@ -1,6 +1,6 @@
 ## router/auth.py
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status , Response , Request
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from redis.asyncio import Redis # Import Redis type hint
@@ -11,7 +11,6 @@ from redis_client import get_redis # Import the dependency
 from app.schemas.auth import UserCreate, TokenResponse
 from app.services import auth_service
 from app.dependencies.auth import get_current_user
-from app.models.user import User
 
 router = APIRouter(tags=["auth"])
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -25,7 +24,9 @@ from app.schemas.auth import UserCreate, TokenResponse
 from app.services import auth_service
 from app.dependencies.auth import get_current_user
 from app.models.user import User
-
+from app.config import settings
+from app.models.prompt import Prompt   # not prompts
+from app.models.image import Image     # not image
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
@@ -39,6 +40,7 @@ async def signup(body: UserCreate, db: AsyncSession = Depends(get_db)):
 
 @router.post("/login", response_model=TokenResponse)
 async def login(
+    response: Response,
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: AsyncSession = Depends(get_db)
 ):
@@ -52,7 +54,17 @@ async def login(
             headers={"WWW-Authenticate": "Bearer"},
         )
         
-    return auth_service.generate_tokens(user)
+    tokens = auth_service.generate_tokens(user)
+
+    # ✅ Set token in cookie automatically
+    response.set_cookie(
+        key="access_token",
+        value=f"Bearer {tokens['access_token']}",
+        httponly=True,      # JS can't read it (XSS protection)
+        secure=settings.ENVIRONMENT == "production",     # Set True in production (HTTPS only)
+        samesite="lax"
+    )
+    return tokens
 
 
 
@@ -70,11 +82,22 @@ async def get_my_profile(current_user: User = Depends(get_current_user)):
 
 @router.post("/logout")
 async def logout(
+    response: Response,
+    request: Request,
     current_user: User = Depends(get_current_user),
-    token: str = Depends(oauth2_scheme), # We need the raw token string
     redis: Redis = Depends(get_redis)
 ):
-    # Blacklist the token in Redis. 
-    # Set the expiration to match your JWT expiration (e.g., 3600 seconds for 60 mins)
-    await redis.setex(f"blacklist:{token}", 3600, "1")
+    token = request.cookies.get("access_token")
+    
+    if token:
+        clean_token = token.replace("Bearer ", "")
+        await redis.setex(f"blacklist:{clean_token}", settings.ACCESS_TOKEN_EXPIRE_MINUTES, "1")
+    
+    # ✅ options must match exactly how it was set
+    response.delete_cookie(
+        key="access_token",
+        httponly=True,
+        samesite="lax"
+    )
+    
     return {"detail": "Successfully logged out"}

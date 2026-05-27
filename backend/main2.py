@@ -1,37 +1,19 @@
-import asyncio
-from functools import partial
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from redis.asyncio import Redis
 from app.routers import auth, prompts, social, image, user, collection
 from app.database import engine, Base
-from app.config import settings
+import os
 
-from alembic.config import Config
-from alembic import command
+IS_PROXIED = os.getenv("BEHIND_PROXY", "false").lower() == "true"
 
 app = FastAPI(
     title="Prompt Platform API",
     version="1.0",
-    root_path="/api"
+    # root_path="/api" if IS_PROXIED else "",  # only set when behind Nginx etc.
 )
 
-@app.on_event("startup")
-async def startup():
-    # ── Run DB migrations ─────────────────────────────────
-    alembic_cfg = Config("/app/alembic.ini")
-    loop = asyncio.get_event_loop()
-    await loop.run_in_executor(None, partial(command.upgrade, alembic_cfg, "head"))
-
-    # ── Connect Redis (used by rate limiter) ──────────────
-    app.state.redis = Redis.from_url(settings.REDIS_URL, decode_responses=True)
-
-@app.on_event("shutdown")
-async def shutdown():
-    await app.state.redis.aclose()
-
-print("🚀 Go to http://localhost/api/docs to access the API documentation")
+# Create tables if not using Alembic
+Base.metadata.create_all(bind=engine)  # remove this if using Alembic
 
 app.add_middleware(
     CORSMiddleware,

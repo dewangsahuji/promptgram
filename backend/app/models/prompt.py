@@ -1,16 +1,19 @@
+# app/models/prompt
+
+
 import uuid
 import datetime
 from typing import List, Optional
 
-from sqlalchemy import String, DateTime, Text, Integer, ForeignKey, Float
+from sqlalchemy import String, DateTime, Text, Integer, ForeignKey, Float ,Index ,Computed
 from sqlalchemy.sql import func
-from sqlalchemy.dialects.postgresql import UUID, ARRAY
+from sqlalchemy.dialects.postgresql import UUID, ARRAY, TSVECTOR
 from sqlalchemy.orm import Mapped, mapped_column , relationship 
 
 # Assuming this is your base import based on your snippet
 from app.database import Base
 
-class prompts(Base):
+class Prompt(Base):
     __tablename__="prompts"
 
     id : Mapped[uuid.UUID] = mapped_column(
@@ -68,11 +71,26 @@ class prompts(Base):
         server_default=func.now()
     )
 
+# ✅ NEW: Add the Computed instruction here
+    search_vector: Mapped[Optional[str]] = mapped_column(
+        TSVECTOR,
+        Computed(
+            "to_tsvector('english', coalesce(title, '') || ' ' || coalesce(prompt_text, ''))", 
+            persisted=True
+        ),
+        nullable=True
+    )
+    
+    # GIN index on the tsvector column — makes full-text search fast
+    __table_args__ = (
+        Index("ix_prompts_search_vector", "search_vector", postgresql_using="gin"),
+    )
+
     # Relationship back to the User
-    user: Mapped["user"] = relationship(back_populates="prompts")
+    user: Mapped["User"] = relationship(back_populates="prompts")
 
     # NEW: Relationship to Images (One-to-Many)
-    image: Mapped[List["image"]] = relationship(
+    images: Mapped[List["Image"]] = relationship(
         back_populates="prompt", 
         cascade="all, delete-orphan"
     )
