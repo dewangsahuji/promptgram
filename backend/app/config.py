@@ -1,5 +1,4 @@
 #config.py
-
 from pydantic_settings import BaseSettings ,SettingsConfigDict
 
 
@@ -16,6 +15,7 @@ class Settings(BaseSettings):
     AWS_SECRET_ACCESS_KEY:str
     AWS_REGION:str
     S3_BUCKET_NAME:str
+    S3_ENDPOINT_URL: str = ""
 
     # Auth
     JWT_SECRET: str
@@ -33,3 +33,4 @@ class Settings(BaseSettings):
     )
 
 settings = Settings()
+

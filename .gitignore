@@ -6,3 +6,4 @@ _pycache__/
 alembic/versions/__pycache__/
 *.db
 *.sqlite3
+.env.local
