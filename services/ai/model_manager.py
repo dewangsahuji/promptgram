@@ -5,7 +5,7 @@ import open_clip
 import torch
 import torchvision.models as tv_models
 import torchvision.transforms as T
-from nudenet import NudeClassifier
+from nudenet import NudeDetector  # ← was NudeClassifier
 
 if TYPE_CHECKING:
     from fastapi import FastAPI
@@ -34,13 +34,13 @@ async def load_models(app: "FastAPI") -> None:
         ])
         imagenet_labels = weights.meta["categories"]
 
-        # ── NudeNet classifier (ONNX-backed) ───────────────────────────────────
-        nude_classifier = NudeClassifier()
+        # ── NudeNet detector (ONNX-backed) ─────────────────────────────────────
+        nude_detector = NudeDetector()  # ← was NudeClassifier()
 
         return (
             clip_model, clip_preprocess, clip_tokenizer,
             mobilenet, mobilenet_preprocess, imagenet_labels,
-            nude_classifier,
+            nude_detector,
         )
 
     (
