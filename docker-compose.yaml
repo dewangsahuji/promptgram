@@ -112,7 +112,7 @@ services:
       - ./services/ai/.env
     depends_on:
       qdrant:
-        condition: service_healthy
+        condition: service_started   # Qdrant has no curl; readiness checked by lifespan
       prompt-service:
         condition: service_healthy
     healthcheck:
@@ -171,11 +171,11 @@ services:
     volumes:
       - qdrant_data:/qdrant/storage
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:6333/healthz || exit 1"]
+      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/localhost/6333' 2>/dev/null && echo ok || exit 1"]
       interval: 10s
       timeout: 5s
-      retries: 5
-      start_period: 10s
+      retries: 10
+      start_period: 20s
     networks:
       - promptgram_net
 
