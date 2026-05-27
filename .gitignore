@@ -12,7 +12,7 @@ __pycache__/
 
 # Environment files — NEVER commit secrets
 .env
-*.env
+*.env.local
 !*.env.example
 
 # Alembic — don't commit generated migration files (generate per environment)
