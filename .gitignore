@@ -1,9 +1,36 @@
+# Virtual environments
 .venv/
-_pycache__/
-*.pyc
-.env
+venv/
+env/
 
-alembic/versions/__pycache__/
-*.db
-*.sqlite3
-.env.local
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Environment files — NEVER commit secrets
+.env
+*.env
+!*.env.example
+
+# Alembic — don't commit generated migration files (generate per environment)
+# Uncomment below if you want to track migrations in git (recommended for teams):
+# !services/*/alembic/versions/*.py
+
+# Docker
+.dockerignore
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

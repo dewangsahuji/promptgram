@@ -1,279 +1,167 @@
-# Promptgram
+# Promptgram — Microservices Backend
 
-A full-stack platform for sharing, discovering, and managing AI prompts — built on a single FastAPI backend with PostgreSQL, Redis, and MinIO (S3-compatible) storage, served through an Nginx reverse proxy.
-
----
+A prompt-sharing platform built with FastAPI, decomposed into independently deployable microservices.
 
 ## Architecture
 
 ```
-Browser
-   └── Nginx (:80)
-         ├── /        → React Frontend (coming soon)
-         └── /api/    → FastAPI Backend (:8000)
-                            ├── PostgreSQL 16  (primary database)
-                            ├── Redis 7        (caching + rate limiting)
-                            └── MinIO          (S3-compatible image storage)
+                    ┌──────────────────────┐
+                    │   React Frontend      │
+                    └──────────┬───────────┘
+                               │ HTTP :80
+                    ┌──────────▼───────────┐
+                    │   Nginx API Gateway   │
+                    └──┬───────┬───────┬───┘
+                       │       │       │
+             ┌─────────▼─┐ ┌───▼────┐ ┌▼──────────┐
+             │   Auth     │ │ Prompt │ │  Social   │
+             │  :8001     │ │ :8002  │ │  :8003    │
+             └─────┬──────┘ └───┬────┘ └─────┬─────┘
+                   │            │             │
+             ┌─────▼────────────▼─────────────▼─────┐
+             │  PostgreSQL  |  Redis  |  MinIO (S3)  │
+             └──────────────────────────────────────┘
 ```
 
----
+## Services
 
-## Tech Stack
+| Service | Port | Responsibilities |
+|---|---|---|
+| **Auth** | 8001 | Registration, login, logout, JWT issuance |
+| **Prompt** | 8002 | Prompt CRUD, image uploads, S3, trending feed |
+| **Social** | 8003 | Likes, comments, follows, collections, user profiles |
+| **Nginx** | 80 | API gateway, path-based routing to all services |
 
-| Layer | Technology |
+## Quick Start
+
+### 1. Configure environment files
+
+Copy and fill in each service's `.env.example`:
+```bash
+cp services/auth/.env.example     services/auth/.env
+cp services/prompt/.env.example   services/prompt/.env
+cp services/social/.env.example   services/social/.env
+```
+
+**Minimum required for local dev (shared secret must match across all services):**
+```env
+JWT_SECRET=your-super-secret-key-change-in-production
+```
+
+### 2. Start all services
+```bash
+docker compose up --build
+```
+
+### 3. Verify health
+```bash
+curl http://localhost/health                    # Nginx gateway
+curl http://localhost:8001/health              # Auth service
+curl http://localhost:8002/health              # Prompt service
+curl http://localhost:8003/health              # Social service
+```
+
+### 4. Access API docs
+| Service | Swagger UI |
 |---|---|
-| Backend | FastAPI + Python 3.11 |
-| ASGI Server | Uvicorn |
-| ORM | SQLAlchemy 2 (async) + asyncpg |
-| Database | PostgreSQL 16 |
-| Cache | Redis 7 |
-| Object Storage | MinIO (S3-compatible) |
-| Auth | python-jose (JWT) + passlib (bcrypt) |
-| File Upload | python-multipart + boto3 |
-| Migrations | Alembic |
-| Reverse Proxy | Nginx |
-| Containerization | Docker + Docker Compose |
+| Auth | http://localhost:8001/docs |
+| Prompt | http://localhost:8002/docs |
+| Social | http://localhost:8003/docs |
 
----
+## API Routes (via Nginx)
+
+| Method | Path | Service | Auth |
+|---|---|---|---|
+| POST | /api/auth/signup | auth | ❌ |
+| POST | /api/auth/login | auth | ❌ |
+| POST | /api/auth/logout | auth | ✅ |
+| GET | /api/auth/me | auth | ✅ |
+| POST | /api/prompts/ | prompt | ✅ |
+| GET | /api/prompts/ | prompt | ❌ |
+| GET | /api/prompts/trending | prompt | ❌ |
+| GET | /api/prompts/{id} | prompt | ❌ |
+| PATCH | /api/prompts/{id} | prompt | ✅ |
+| DELETE | /api/prompts/{id} | prompt | ✅ |
+| POST | /api/images/upload | prompt | ✅ |
+| POST | /api/like/{prompt_id} | social | ✅ |
+| POST | /api/comment/{prompt_id} | social | ✅ |
+| POST | /api/follow/{user_id} | social | ✅ |
+| POST | /api/collections/ | social | ✅ |
+| GET | /api/users/{user_id} | social | ❌ |
+
+## Database Migrations (Alembic)
+
+Each service manages its own database schema. Run migrations per-service:
+
+```bash
+# Auth service
+docker compose exec auth-service alembic revision --autogenerate -m "initial"
+docker compose exec auth-service alembic upgrade head
+
+# Prompt service
+docker compose exec prompt-service alembic revision --autogenerate -m "initial"
+docker compose exec prompt-service alembic upgrade head
+
+# Social service
+docker compose exec social-service alembic revision --autogenerate -m "initial"
+docker compose exec social-service alembic upgrade head
+```
 
 ## Project Structure
 
 ```
 promptgram/
-├── docker-compose.yaml
+├── docker-compose.yaml          ← Orchestrates all services
 ├── nginx/
-│   └── nginx.conf
-└── backend/
-    ├── Dockerfile
-    ├── requirements.txt
-    ├── main.py
-    ├── .env                  # never committed
-    ├── alembic/
-    │   └── versions/
-    └── app/
-        ├── config.py         # pydantic-settings
-        ├── database.py       # async engine + session
+│   └── nginx.conf               ← API gateway routing
+├── scripts/
+│   └── init-dbs.sql             ← Creates auth_db, prompt_db, social_db
+└── services/
+    ├── auth/                    ← Auth microservice (port 8001)
+    │   ├── Dockerfile
+    │   ├── main.py
+    │   ├── alembic/
+    │   ├── models/
+    │   ├── schemas/
+    │   ├── routers/
+    │   ├── services/
+    │   └── dependencies/
+    ├── prompt/                  ← Prompt microservice (port 8002)
+    │   ├── Dockerfile
+    │   ├── main.py
+    │   ├── alembic/
+    │   ├── models/
+    │   ├── schemas/
+    │   ├── routers/
+    │   ├── services/
+    │   └── dependencies/
+    └── social/                  ← Social microservice (port 8003)
+        ├── Dockerfile
+        ├── main.py
+        ├── alembic/
         ├── models/
-        │   ├── user.py
-        │   ├── prompt.py
-        │   ├── image.py
-        │   ├── collection.py
-        │   └── social.py     # likes, follows, comments
         ├── schemas/
         ├── routers/
-        │   ├── auth.py       # /auth/*
-        │   ├── prompts.py    # /prompts/*
-        │   ├── image.py      # /images/*
-        │   ├── social.py     # /like, /comment, /follow
-        │   ├── user.py       # /users/*
-        │   └── collection.py # /collections/*
-        ├── dependencies/
-        │   ├── auth.py       # get_current_user, require_auth
-        │   └── rate_limit.py
-        └── services/
+        ├── services/
+        └── dependencies/
 ```
 
----
+## Key Design Decisions
 
-## Getting Started
+- **JWT shared secret** — All services validate JWTs locally using the same `JWT_SECRET`. No Auth service call needed per request.
+- **Database isolation** — Each service has its own Postgres database (`auth_db`, `prompt_db`, `social_db`) on the same Postgres instance.
+- **No cross-service FK constraints** — Services reference each other by UUID only; referential integrity is maintained at application level.
+- **Inter-service communication** — `httpx` async HTTP calls (Social → Auth for user profiles, Social → Prompt for user prompts).
+- **Token blacklisting** — Redis shared across services for logout (JWT blacklist pattern).
 
-### Prerequisites
-
-- Docker + Docker Compose
-- Git
-
-### 1. Clone the repo
+## Local Dev (without Docker)
 
 ```bash
-git clone https://github.com/yourname/promptgram.git
-cd promptgram
+# Start infrastructure only
+docker compose up postgres redis minio -d
+
+# Run a service locally
+cd services/auth
+pip install -r requirements.txt
+uvicorn main:app --reload --port 8001
 ```
-
-### 2. Create the `.env` file
-
-```bash
-cp backend/.env.example backend/.env
-```
-
-Fill in your values:
-
-```env
-# Database
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=your_password
-POSTGRES_DB=prompt_platform
-DATABASE_URL=postgresql+asyncpg://postgres:your_password@postgres:5432/prompt_platform
-
-# Redis
-REDIS_URL=redis://redis:6379
-
-# MinIO
-MINIO_ROOT_USER=minioadmin
-MINIO_ROOT_PASSWORD=your_password
-MINIO_URL=minio:9000
-
-# JWT
-SECRET_KEY=your_secret_key_here
-ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=30
-
-# CORS
-ALLOWED_ORIGINS=["http://localhost:3000"]
-```
-
-### 3. Start all services
-
-```bash
-docker compose up -d
-```
-
-### 4. Run database migrations
-
-```bash
-docker compose exec backend alembic upgrade head
-```
-
-### 5. Verify
-
-| URL | What you get |
-|---|---|
-| `http://localhost/api/docs` | Swagger UI |
-| `http://localhost/api/health` | Health check |
-| `http://localhost:9001` | MinIO console |
-
----
-
-## API Endpoints
-
-### Auth — `/api/auth`
-| Method | Path | Description |
-|---|---|---|
-| POST | `/auth/signup` | Register new user |
-| POST | `/auth/login` | Login, returns JWT |
-| POST | `/auth/refresh` | Refresh access token |
-| POST | `/auth/logout` | Invalidate token |
-
-### Prompts — `/api/prompts`
-| Method | Path | Description |
-|---|---|---|
-| GET | `/prompts/` | List prompts (feed) |
-| POST | `/prompts/` | Create prompt 🔒 |
-| GET | `/prompts/{id}` | Get prompt detail |
-| DELETE | `/prompts/{id}` | Delete prompt 🔒 |
-
-### Images — `/api/images`
-| Method | Path | Description |
-|---|---|---|
-| POST | `/images/upload` | Upload image (multipart) 🔒 |
-| DELETE | `/images/{id}` | Delete image 🔒 |
-
-### Social — `/api`
-| Method | Path | Description |
-|---|---|---|
-| POST | `/like/{prompt_id}` | Toggle like 🔒 |
-| POST | `/comment/{prompt_id}` | Add comment 🔒 |
-| DELETE | `/comment/{id}` | Delete comment 🔒 |
-| POST | `/follow/{user_id}` | Toggle follow 🔒 |
-
-### Users — `/api/users`
-| Method | Path | Description |
-|---|---|---|
-| GET | `/users/{id}` | Get user profile |
-| GET | `/users/{id}/prompts` | Get user's prompts |
-| PATCH | `/users/me` | Update own profile 🔒 |
-
-### Collections — `/api/collections`
-| Method | Path | Description |
-|---|---|---|
-| POST | `/collections/` | Create collection 🔒 |
-| GET | `/collections/{id}` | Get collection |
-| POST | `/collections/{id}/prompts/{prompt_id}` | Add prompt 🔒 |
-| DELETE | `/collections/{id}/prompts/{prompt_id}` | Remove prompt 🔒 |
-
-🔒 = requires Bearer token
-
----
-
-## Docker Services
-
-| Service | Description | Ports |
-|---|---|---|
-| `nginx` | Reverse proxy | 80 |
-| `backend` | FastAPI app | 8000 (internal) |
-| `postgres` | Primary database | 5432 |
-| `redis` | Cache + rate limiting | 6379 (internal) |
-| `minio` | Object storage | 9000 (internal), 9001 (console) |
-
----
-
-## Development
-
-### Rebuild after code changes
-
-```bash
-docker compose up -d --build backend
-```
-
-### Create a new migration
-
-```bash
-docker compose exec backend alembic revision --autogenerate -m "describe your change"
-docker compose exec backend alembic upgrade head
-```
-
-### View logs
-
-```bash
-docker compose logs -f backend
-docker compose logs -f postgres
-```
-
-### Stop everything
-
-```bash
-docker compose down
-```
-
-Stop and wipe the database:
-
-```bash
-docker compose down -v
-```
-
----
-
-## Roadmap
-
-- [x] FastAPI backend with all routers
-- [x] PostgreSQL + Alembic migrations
-- [x] Redis caching + rate limiting
-- [x] MinIO S3 image storage
-- [x] JWT authentication
-- [x] Nginx reverse proxy
-- [ ] React frontend
-- [ ] AI features (CLIP embeddings, semantic search, NSFW moderation)
-- [ ] HTTPS / SSL (Certbot)
-- [ ] Celery async job queue
-- [ ] Gunicorn multi-worker production setup
-
----
-
-## Environment Variables Reference
-
-| Variable | Description |
-|---|---|
-| `DATABASE_URL` | Async PostgreSQL connection string |
-| `REDIS_URL` | Redis connection string |
-| `MINIO_URL` | MinIO internal host:port |
-| `MINIO_ROOT_USER` | MinIO access key |
-| `MINIO_ROOT_PASSWORD` | MinIO secret key |
-| `SECRET_KEY` | JWT signing secret |
-| `ALGORITHM` | JWT algorithm (default: HS256) |
-| `ACCESS_TOKEN_EXPIRE_MINUTES` | Token TTL in minutes |
-| `ALLOWED_ORIGINS` | JSON array of allowed CORS origins |
-
----
-
-## License
-
-MIT

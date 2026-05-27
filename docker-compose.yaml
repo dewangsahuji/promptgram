@@ -1,85 +1,160 @@
-# promptgram/docker-compose.yaml
+
+
 
 services:
 
+  # ─── API Gateway ────────────────────────────────────────────────────────────
   nginx:
-    image: nginx:alpine
+    image: nginx:1.25-alpine
+    container_name: promptgram_gateway
     ports:
       - "80:80"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:
-      - backend
+      auth-service:
+        condition: service_healthy
+      prompt-service:
+        condition: service_healthy
+      social-service:
+        condition: service_healthy
+    restart: unless-stopped
     networks:
-      - app-net
+      - promptgram_net
 
-  backend:
-    build: ./backend
-    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
-    expose:
-      - "8000"
-    volumes:
-      - ./backend:/app                  # ← hot reload
+  # ─── Auth Service ────────────────────────────────────────────────────────────
+  auth-service:
+    build:
+      context: ./services/auth
+      dockerfile: Dockerfile
+    container_name: promptgram_auth
+    ports:
+      - "8001:8001"
     env_file:
-      - ./backend/.env
+      - ./services/auth/.env
     depends_on:
       postgres:
         condition: service_healthy
       redis:
-        condition: service_started
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    restart: unless-stopped
     networks:
-      - app-net
+      - promptgram_net
 
+  # ─── Prompt Service ──────────────────────────────────────────────────────────
+  prompt-service:
+    build:
+      context: ./services/prompt
+      dockerfile: Dockerfile
+    container_name: promptgram_prompt
+    ports:
+      - "8002:8002"
+    env_file:
+      - ./services/prompt/.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8002/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    restart: unless-stopped
+    networks:
+      - promptgram_net
+
+  # ─── Social Service ──────────────────────────────────────────────────────────
+  social-service:
+    build:
+      context: ./services/social
+      dockerfile: Dockerfile
+    container_name: promptgram_social
+    ports:
+      - "8003:8003"
+    env_file:
+      - ./services/social/.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
+      prompt-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8003/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    restart: unless-stopped
+    networks:
+      - promptgram_net
+
+  # ─── PostgreSQL (shared instance, one DB per service) ────────────────────────
   postgres:
     image: postgres:16
-    container_name: postgres_db
+    container_name: promptgram_postgres
     restart: always
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
-      POSTGRES_DB: prompt_platform
+      POSTGRES_DB: postgres          # default db; each service creates its own
+    ports:
+      - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data   # ← Postgres 18+ path
-    networks:
-      - app-net
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-dbs.sql:/docker-entrypoint-initdb.d/init-dbs.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
+    networks:
+      - promptgram_net
 
+  # ─── Redis (shared — JWT blacklist, caching) ─────────────────────────────────
   redis:
     image: redis:7-alpine
-    restart: always
+    container_name: promptgram_redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
     networks:
-      - app-net
+      - promptgram_net
 
+  # ─── MinIO (S3-compatible local dev storage) ─────────────────────────────────
   minio:
     image: minio/minio
+    container_name: promptgram_minio
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin
     ports:
+      - "9000:9000"
       - "9001:9001"
-    expose:
-      - "9000"
     volumes:
-      - minio_data:/data                # ← persist minio data
+      - minio_data:/data
     networks:
-      - app-net
-
-  # frontend:
-  #   build: ./frontend
-  #   expose:
-  #     - "3000"
-  #   networks:
-  #     - app-net
+      - promptgram_net
 
 volumes:
   postgres_data:
   minio_data:
 
 networks:
-  app-net:
+  promptgram_net:
     driver: bridge
