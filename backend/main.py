@@ -3,8 +3,10 @@ from functools import partial
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from redis.asyncio import Redis
 from app.routers import auth, prompts, social, image, user, collection
 from app.database import engine, Base
+from app.config import settings
 
 from alembic.config import Config
 from alembic import command
@@ -16,10 +18,18 @@ app = FastAPI(
 )
 
 @app.on_event("startup")
-async def run_migrations():
+async def startup():
+    # ── Run DB migrations ─────────────────────────────────
     alembic_cfg = Config("/app/alembic.ini")
     loop = asyncio.get_event_loop()
     await loop.run_in_executor(None, partial(command.upgrade, alembic_cfg, "head"))
+
+    # ── Connect Redis (used by rate limiter) ──────────────
+    app.state.redis = Redis.from_url(settings.REDIS_URL, decode_responses=True)
+
+@app.on_event("shutdown")
+async def shutdown():
+    await app.state.redis.aclose()
 
 print("🚀 Go to http://localhost/api/docs to access the API documentation")
 

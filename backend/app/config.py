@@ -22,6 +22,10 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
+    # Upload rate limiting (applied per IP via upload_rate_limiter dependency)
+    UPLOAD_RATE_LIMIT: int = 10              # max uploads per window
+    UPLOAD_RATE_WINDOW_SECONDS: int = 60    # window size in seconds
+
     # Qdrant Settings (from your blueprint)
     QDRANT_HOST: str = "qdrant"
     QDRANT_PORT: int = 6333
