@@ -75,3 +75,49 @@ async def delete_prompt(
     user_id: UUID = Depends(require_auth),
 ):
     await prompt_service.delete_prompt(db, prompt_id, user_id)
+
+
+# ─── AI service PATCH endpoints ───────────────────────────────────────────────
+
+from pydantic import BaseModel
+from typing import List as _List
+
+
+class TagsUpdate(BaseModel):
+    tags: _List[str]
+
+
+class ScoreUpdate(BaseModel):
+    score: float
+
+
+@router.patch("/{prompt_id}/tags", status_code=200)
+async def update_tags(
+    prompt_id: UUID,
+    body: TagsUpdate,
+    db: AsyncSession = Depends(get_db),
+):
+    """Called by ai-service classifier to append auto-detected tags."""
+    prompt = await prompt_service.get_prompt(db, prompt_id)
+    if not prompt:
+        raise HTTPException(status_code=404, detail="Prompt not found")
+    existing = list(prompt.tags or [])
+    merged = list(dict.fromkeys(existing + body.tags))  # deduplicate, preserve order
+    prompt.tags = merged
+    await db.commit()
+    return {"tags": merged}
+
+
+@router.patch("/{prompt_id}/score", status_code=200)
+async def update_score(
+    prompt_id: UUID,
+    body: ScoreUpdate,
+    db: AsyncSession = Depends(get_db),
+):
+    """Called by ai-service classifier to set quality score."""
+    prompt = await prompt_service.get_prompt(db, prompt_id)
+    if not prompt:
+        raise HTTPException(status_code=404, detail="Prompt not found")
+    prompt.score = body.score
+    await db.commit()
+    return {"score": body.score}
