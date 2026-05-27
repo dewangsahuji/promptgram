@@ -13,17 +13,22 @@ services:
     networks:
       - app-net
 
-  # backend:
-  #   build: ./backend
-  #   expose:
-  #     - "8000"
-  #   env_file:
-  #     - ./backend/.env        # reuse the same .env you already have
-  #   depends_on:
-  #     - postgres
-  #     - redis
-  #   networks:
-  #     - app-net
+  backend:
+    build: ./backend
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    expose:
+      - "8000"
+    volumes:
+      - ./backend:/app                  # ← hot reload
+    env_file:
+      - ./backend/.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - app-net
 
   postgres:
     image: postgres:16
@@ -34,7 +39,7 @@ services:
       POSTGRES_PASSWORD: password
       POSTGRES_DB: prompt_platform
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data   # ← Postgres 18+ path
     networks:
       - app-net
     healthcheck:
@@ -43,22 +48,9 @@ services:
       timeout: 5s
       retries: 5
 
-  backend:
-    build: ./backend
-    expose:
-      - "8000"
-    env_file:
-      - ./backend/.env
-    depends_on:
-      postgres:
-        condition: service_healthy   # ← waits for healthcheck to pass
-      redis:
-        condition: service_started
-    networks:
-      - app-net
-
   redis:
     image: redis:7-alpine
+    restart: always
     networks:
       - app-net
 
@@ -69,13 +61,15 @@ services:
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin
     ports:
-      - "9001:9001"           # console only — backend talks to it internally
+      - "9001:9001"
     expose:
       - "9000"
+    volumes:
+      - minio_data:/data                # ← persist minio data
     networks:
       - app-net
 
-  # frontend:                 # uncomment when frontend is ready
+  # frontend:
   #   build: ./frontend
   #   expose:
   #     - "3000"
@@ -84,6 +78,7 @@ services:
 
 volumes:
   postgres_data:
+  minio_data:
 
 networks:
   app-net:

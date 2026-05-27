@@ -6,6 +6,8 @@ from pydantic import EmailStr
 from typing import List , Optional
 import uuid
 import datetime
+from app.schemas.image import ImageOut
+
 
 class PromptCreate(BaseModel):
     title : str
@@ -27,3 +29,5 @@ class PromptOut(BaseModel):
     views : int
     downloads : int
     created_at : datetime.datetime
+
+    images: List[ImageOut] = []

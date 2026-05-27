@@ -1,0 +1,16 @@
+terminal 
+
+docker run --name postgres-db ^
+-e POSTGRES_PASSWORD=password ^
+-e POSTGRES_USER=postgres ^
+-e POSTGRES_DB=prompt_platform ^
+-p 5432:5432 ^
+-v pg_data:/var/lib/postgresql/data ^
+-d postgres
+
+
+docker run -d --name prompt-redis -p 6379:6379 redis:7-alpine
+
+
+C:\Users\dewan\Coding\FAST_API1\promptgram\backend\.venv\Scripts
+http://localhost/api/docs
