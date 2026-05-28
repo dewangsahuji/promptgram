@@ -12,7 +12,6 @@ from config import settings
 from database import Base, engine, get_db
 from redis_client import get_redis
 from routers import auth
-from dependencies.auth import close_http_client
 
 
 @asynccontextmanager
@@ -28,16 +27,12 @@ async def lifespan(app: FastAPI):
 
     # ── Shutdown ──────────────────────────────────────────────────────────────
     await engine.dispose()
-    await close_http_client()
 
 
 app = FastAPI(
     title="Auth Service",
     version="1.0.0",
     description="Authentication and authorization microservice for Promptgram.",
-    # root_path lets FastAPI generate correct OpenAPI URLs when sitting behind
-    # an Nginx reverse proxy that strips the /api/auth prefix.
-    root_path="/api/auth",
     lifespan=lifespan,
 )
 
