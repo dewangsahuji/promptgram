@@ -1,3 +1,5 @@
+# routers/images_auth.py
+
 import uuid
 
 import httpx
