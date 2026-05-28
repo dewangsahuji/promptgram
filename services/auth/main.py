@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from database import Base, engine
-from routers import auth
+from routers import auth, prompt_auth, images_auth, social_auth
 
 
 @asynccontextmanager
@@ -32,7 +32,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# ─── Core auth (login / signup / me / logout) ─────────────────────────────────
 app.include_router(auth.router, prefix="/auth")
+
+# ─── Authenticated prompt endpoints (proxied to prompt-service) ───────────────
+app.include_router(prompt_auth.router, prefix="/prompts")
+
+# ─── Authenticated image endpoints (proxied to prompt-service) ────────────────
+app.include_router(images_auth.router, prefix="/images")
+
+# ─── Authenticated social endpoints (proxied to social-service) ───────────────
+app.include_router(social_auth.router)
 
 
 @app.get("/health", tags=["health"])

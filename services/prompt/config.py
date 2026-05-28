@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     S3_ENDPOINT_URL: str | None = None
     # AI service URL for background pipeline calls
     AI_SERVICE_URL: str = "http://ai-service:8004"
+    # Auth service URL for username enrichment
+    AUTH_SERVICE_URL: str = "http://auth-service:8001"
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

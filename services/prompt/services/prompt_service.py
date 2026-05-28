@@ -5,19 +5,18 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import desc, func
 from fastapi import HTTPException
+from config import settings
 from models.prompt import Prompt
 from models.image import Image
 from schemas.prompt import PromptCreate, PromptUpdate
 from s3_client import _url_for_key
-
-AUTH_SERVICE_URL = "http://auth-service:8001"
 
 
 async def _get_username(user_id: uuid.UUID) -> Optional[str]:
     """Fetch username from auth-service. Returns None on any failure."""
     try:
         async with httpx.AsyncClient(timeout=3.0) as client:
-            r = await client.get(f"{AUTH_SERVICE_URL}/auth/users/{str(user_id)}")
+            r = await client.get(f"{settings.AUTH_SERVICE_URL}/auth/users/{str(user_id)}")
             if r.status_code == 200:
                 return r.json().get("username")
     except Exception:

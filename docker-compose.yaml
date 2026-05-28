@@ -52,6 +52,10 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      prompt-service:
+        condition: service_healthy
+      social-service:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health')"]
       interval: 10s
@@ -99,8 +103,6 @@ services:
       - ./services/social/.env
     depends_on:
       postgres:
-        condition: service_healthy
-      auth-service:
         condition: service_healthy
       prompt-service:
         condition: service_healthy
