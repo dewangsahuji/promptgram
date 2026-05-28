@@ -10,6 +10,7 @@ from database import get_db
 from s3_client import upload_to_s3, delete_from_s3, _url_for_key
 from models.image import Image
 from schemas.image import ImageOut
+from dependencies.auth import require_auth
 from PIL import Image as PILImage
 import httpx
 from config import settings
@@ -69,6 +70,7 @@ async def upload_image(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     db: AsyncSession = Depends(get_db),
+    user_id: UUID = Depends(require_auth),
 ):
     if file.content_type not in ALLOWED_TYPES:
         raise HTTPException(
@@ -86,6 +88,7 @@ async def upload_image(
     await upload_to_s3(content, s3_key, file.content_type)
     await generate_thumbnail(content, thumb_key)
 
+    # Store only the s3_key — URLs are regenerated on read
     s3_url = _url_for_key(s3_key)
     thumb_url = _url_for_key(thumb_key)
 
@@ -99,6 +102,7 @@ async def upload_image(
     await db.commit()
     await db.refresh(image)
 
+    # Trigger AI pipeline in the background (non-blocking)
     background_tasks.add_task(_trigger_ai_pipeline, str(image.id))
 
     return _image_out(image)
@@ -133,6 +137,7 @@ async def get_image(image_id: UUID, db: AsyncSession = Depends(get_db)):
 async def delete_image(
     image_id: UUID,
     db: AsyncSession = Depends(get_db),
+    user_id: UUID = Depends(require_auth),
 ):
     result = await db.execute(select(Image).where(Image.id == image_id))
     image = result.scalars().first()
