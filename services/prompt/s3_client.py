@@ -8,15 +8,22 @@ _s3_kwargs = dict(
     aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
     aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
 )
+_s3_presign_kwargs = _s3_kwargs.copy()
+
 if settings.S3_ENDPOINT_URL:
     # MinIO / S3-compatible endpoint (local dev)
     _s3_kwargs["endpoint_url"] = settings.S3_ENDPOINT_URL
+    # For presigned URLs, we must sign with the endpoint the browser will use!
+    _s3_presign_kwargs["endpoint_url"] = settings.S3_ENDPOINT_URL.replace("minio:9000", "localhost:9000")
 else:
     from botocore.client import Config
     _s3_kwargs["endpoint_url"] = f"https://s3.{settings.AWS_REGION}.amazonaws.com"
     _s3_kwargs["config"] = Config(s3={'addressing_style': 'virtual'})
+    _s3_presign_kwargs["endpoint_url"] = _s3_kwargs["endpoint_url"]
+    _s3_presign_kwargs["config"] = _s3_kwargs["config"]
 
 s3 = boto3.client("s3", **_s3_kwargs)
+s3_presign = boto3.client("s3", **_s3_presign_kwargs)
 
 # Pre-signed URL expiry — 7 days (max for IAM role-based credentials is 12h,
 # but for regular IAM user keys it can be up to 7 days)
@@ -27,22 +34,16 @@ def _url_for_key(key: str) -> str:
     """
     Return a URL for an S3 object.
 
-    - For MinIO (local dev): plain public URL via the endpoint.
+    - For MinIO (local dev): presigned URL rewritten for localhost.
     - For real AWS S3: pre-signed URL so private-bucket objects load in browsers.
     """
-    if settings.S3_ENDPOINT_URL:
-        # MinIO: http://localhost:9000/bucket/key  (publicly accessible in dev)
-        # Note: If S3_ENDPOINT_URL uses the internal docker hostname 'minio', 
-        # rewrite it to 'localhost' so the browser can resolve it!
-        endpoint = settings.S3_ENDPOINT_URL.replace("minio", "localhost")
-        return f"{endpoint}/{settings.S3_BUCKET_NAME}/{key}"
-
-    # Real AWS S3 — generate a pre-signed URL (works even with Block Public Access ON)
-    return s3.generate_presigned_url(
+    url = s3_presign.generate_presigned_url(
         "get_object",
         Params={"Bucket": settings.S3_BUCKET_NAME, "Key": key},
         ExpiresIn=PRESIGN_EXPIRY,
     )
+    
+    return url
 
 
 async def ensure_bucket_exists():

@@ -110,7 +110,7 @@ export default function PromptDetailPage() {
         <div className="card-crown" />
 
         {/* Hero image */}
-        {imageUrl && !imgError ? (
+        {imageUrl && !imgError && (
           <div className="detail-hero">
             <img
               src={imageUrl}
@@ -118,10 +118,6 @@ export default function PromptDetailPage() {
               className="detail-hero-img"
               onError={() => setImgError(true)}
             />
-          </div>
-        ) : (
-          <div className="detail-hero-placeholder">
-            <Zap size={48} />
           </div>
         )}
 
