@@ -1,43 +1,27 @@
 """
 services/social/dependencies/auth.py
 
-The social-service does not validate JWTs itself.
-It delegates to the auth-service via HTTP and gets back a user UUID.
+Validates JWT tokens locally using the shared JWT_SECRET, then checks the
+shared Redis instance for blacklisted tokens (written by auth-service on logout).
 
-The social-service also proxies /users/{id} and /users/{id}/prompts to the
-auth-service and prompt-service respectively. Those proxy calls use the same
-shared HTTP client defined here.
+No HTTP call is made between services — token revocation propagates instantly
+via the shared Redis blacklist.
 """
 import uuid
 from typing import Optional
 
-import httpx
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
+from jose import JWTError, jwt
 
-from config import settings  # exposes settings.AUTH_SERVICE_URL
+from config import settings
+from redis_client import get_redis
 
+# tokenUrl uses the browser-accessible host so Swagger UI can log in
 oauth2_scheme = OAuth2PasswordBearer(
     tokenUrl=f"{settings.DOCS_AUTH_SERVICE_URL}/auth/login",
     auto_error=False,
 )
-
-# Shared client reused for auth delegation AND proxy calls to auth/prompt services.
-# Register close_http_client() in your app's shutdown lifespan handler.
-_http_client: Optional[httpx.AsyncClient] = None
-
-
-def get_http_client() -> httpx.AsyncClient:
-    global _http_client
-    if _http_client is None or _http_client.is_closed:
-        _http_client = httpx.AsyncClient(timeout=5.0)
-    return _http_client
-
-
-async def close_http_client() -> None:
-    global _http_client
-    if _http_client and not _http_client.is_closed:
-        await _http_client.aclose()
 
 
 async def get_current_user_id(
@@ -45,10 +29,17 @@ async def get_current_user_id(
     token: str = Depends(oauth2_scheme),
 ) -> uuid.UUID:
     """
-    Validate a Bearer/cookie token by calling auth-service /auth/me.
-    Returns the validated user UUID on success.
+    Authenticate a request and return the user UUID.
+
+    Token resolution order:
+      1. `access_token` cookie  (frontend / browser)
+      2. Authorization: Bearer  (Swagger UI / API clients)
+
+    Validation:
+      1. Decode and verify the JWT locally (no network hop)
+      2. Check the shared Redis blacklist written by auth-service on logout
     """
-    # 1. Cookie takes priority over the Authorization header.
+    # 1. Cookie takes priority over the Authorization header
     raw_cookie = request.cookies.get("access_token")
     if raw_cookie:
         token = raw_cookie.removeprefix("Bearer ").strip()
@@ -60,47 +51,38 @@ async def get_current_user_id(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # 2. Delegate validation to the auth-service.
-    client = get_http_client()
+    # 2. Verify JWT signature and expiry locally
     try:
-        response = await client.get(
-            f"{settings.AUTH_SERVICE_URL}/auth/me",
-            headers={"Authorization": f"Bearer {token}"},
+        payload = jwt.decode(
+            token,
+            settings.JWT_SECRET,
+            algorithms=[settings.JWT_ALGORITHM],
         )
-    except httpx.TimeoutException:
-        raise HTTPException(
-            status_code=status.HTTP_504_GATEWAY_TIMEOUT,
-            detail="Auth service timed out.",
-        )
-    except httpx.RequestError:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Auth service unavailable.",
-        )
-
-    if response.status_code == status.HTTP_401_UNAUTHORIZED:
+        user_id: Optional[str] = payload.get("sub")
+        if not user_id:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token payload.",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+    except JWTError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or revoked token.",
+            detail="Could not validate token.",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    if response.status_code != status.HTTP_200_OK:
+    # 3. Check shared Redis blacklist (auth-service writes here on logout)
+    redis = await get_redis()
+    if await redis.get(f"blacklist:{token}"):
         raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"Unexpected response from auth service: {response.status_code}",
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token has been revoked.",
+            headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # 3. Parse and validate the returned user UUID.
-    try:
-        user_data = response.json()
-        return uuid.UUID(user_data["id"])
-    except (KeyError, ValueError) as exc:
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"Auth service returned an invalid user payload: {exc}",
-        )
+    return uuid.UUID(user_id)
 
 
-# Semantic alias used in router dependencies.
+# Semantic alias used in router dependencies
 require_auth = get_current_user_id

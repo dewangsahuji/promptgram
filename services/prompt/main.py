@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from database import engine, Base
+from redis_client import close_redis
 from routers import prompts, images
 from s3_client import ensure_bucket_exists
 
@@ -16,6 +17,8 @@ async def lifespan(app: FastAPI):
     # Ensure S3/MinIO bucket exists
     await ensure_bucket_exists()
     yield
+    # Shutdown: close Redis connection pool
+    await close_redis()
 
 
 app = FastAPI(title="Prompt Service", version="1.0", lifespan=lifespan)

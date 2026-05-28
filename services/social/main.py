@@ -1,9 +1,24 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import social, collections, users
-from database import engine, Base
 
-app = FastAPI(title="Social Service", version="1.0")
+from database import engine, Base
+from redis_client import close_redis
+from routers import social, collections, users
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: create DB tables
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    yield
+    # Shutdown: close Redis connection pool
+    await close_redis()
+
+
+app = FastAPI(title="Social Service", version="1.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -12,13 +27,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-
-@app.on_event("startup")
-async def on_startup():
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-
 
 app.include_router(social.router)
 app.include_router(collections.router, prefix="/collections")
