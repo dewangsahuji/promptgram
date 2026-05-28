@@ -8,8 +8,16 @@ class UserCreate(BaseModel):
 
 
 class TokenResponse(BaseModel):
+    """Returned by /auth/login (access_token JWT) and /auth/api-token (api_token)."""
     access_token: str
-    token_type: str
+    token_type: str = "bearer"
+
+
+class ApiTokenResponse(BaseModel):
+    """Returned by /auth/authorize — the long-lived API token."""
+    api_token: str
+    token_type: str = "bearer"
+    expires_in: int
 
 
 class UserLogin(BaseModel):

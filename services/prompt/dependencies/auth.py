@@ -1,45 +1,57 @@
 """
 services/prompt/dependencies/auth.py
 
-Validates JWT tokens locally using the shared JWT_SECRET, then checks the
-shared Redis instance for blacklisted tokens (written by auth-service on logout).
+Production path  (requests through Nginx):
+  Nginx validates the api_token via auth_request → auth-service /auth/validate
+  → injects X-User-Id header → this service reads it directly. No token logic needed.
 
-No HTTP call is made between services — token revocation propagates instantly
-via the shared Redis blacklist.
+Dev/Swagger path (requests direct to :8002):
+  No X-User-Id header present, so fall back to validating the api_token against
+  the shared Redis instance (same Redis the auth-service writes to on /auth/api-token).
 """
 import uuid
 from typing import Optional
 
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
-from jose import JWTError, jwt
 
-from config import settings
 from redis_client import get_redis
 
-# tokenUrl uses the browser-accessible host so Swagger UI can log in
+# Swagger "Authorize" button points to auth-service /auth/api-token so the user
+# enters credentials once and gets an api_token usable on this service directly.
 oauth2_scheme = OAuth2PasswordBearer(
-    tokenUrl=f"{settings.DOCS_AUTH_SERVICE_URL}/auth/login",
+    tokenUrl="http://localhost:8001/auth/api-token",
     auto_error=False,
 )
 
 
 async def get_current_user_id(
     request: Request,
-    token: str = Depends(oauth2_scheme),
+    token: Optional[str] = Depends(oauth2_scheme),
 ) -> uuid.UUID:
     """
-    Authenticate a request and return the user UUID.
+    Return the authenticated user's UUID.
 
-    Token resolution order:
-      1. `access_token` cookie  (frontend / browser)
-      2. Authorization: Bearer  (Swagger UI / API clients)
+    Path 1 — Production (via Nginx gateway):
+      Nginx has already validated the api_token and injected X-User-Id.
+      We trust this header completely.
 
-    Validation:
-      1. Decode and verify the JWT locally (no network hop)
-      2. Check the shared Redis blacklist written by auth-service on logout
+    Path 2 — Dev / Swagger UI on localhost:8002:
+      No X-User-Id present; validate the api_token against shared Redis directly.
     """
-    # 1. Cookie takes priority over the Authorization header
+    # ── Path 1: Production — trust Nginx-injected header ─────────────────────
+    user_id_header = request.headers.get("X-User-Id")
+    if user_id_header:
+        try:
+            return uuid.UUID(user_id_header)
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid X-User-Id header.",
+            )
+
+    # ── Path 2: Dev — validate api_token directly against shared Redis ────────
+    # Extract token from cookie or Authorization header
     raw_cookie = request.cookies.get("access_token")
     if raw_cookie:
         token = raw_cookie.removeprefix("Bearer ").strip()
@@ -51,33 +63,12 @@ async def get_current_user_id(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # 2. Verify JWT signature and expiry locally
-    try:
-        payload = jwt.decode(
-            token,
-            settings.JWT_SECRET,
-            algorithms=[settings.JWT_ALGORITHM],
-        )
-        user_id: Optional[str] = payload.get("sub")
-        if not user_id:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid token payload.",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-    except JWTError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate token.",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    # 3. Check shared Redis blacklist (auth-service writes here on logout)
     redis = await get_redis()
-    if await redis.get(f"blacklist:{token}"):
+    user_id: Optional[str] = await redis.get(f"api_token:{token}")
+    if not user_id:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token has been revoked.",
+            detail="Invalid or expired api_token.",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
