@@ -8,7 +8,6 @@ from database import get_db
 from redis_client import get_redis
 from schemas.prompt import PromptCreate, PromptOut, PromptUpdate
 from services import prompt_service
-from dependencies.auth import require_auth
 
 router = APIRouter(tags=["prompts"])
 
@@ -16,8 +15,8 @@ router = APIRouter(tags=["prompts"])
 @router.post("/", response_model=PromptOut, status_code=201)
 async def create_prompt(
     body: PromptCreate,
+    user_id: UUID,
     db: AsyncSession = Depends(get_db),
-    user_id: UUID = Depends(require_auth),
 ):
     return await prompt_service.create_prompt(db, user_id, body)
 
@@ -63,8 +62,8 @@ async def get_prompt(
 async def update_prompt(
     prompt_id: UUID,
     body: PromptUpdate,
+    user_id: UUID,
     db: AsyncSession = Depends(get_db),
-    user_id: UUID = Depends(require_auth),
 ):
     return await prompt_service.update_prompt(db, prompt_id, user_id, body)
 
@@ -72,8 +71,8 @@ async def update_prompt(
 @router.delete("/{prompt_id}", status_code=204)
 async def delete_prompt(
     prompt_id: UUID,
+    user_id: UUID,
     db: AsyncSession = Depends(get_db),
-    user_id: UUID = Depends(require_auth),
 ):
     await prompt_service.delete_prompt(db, prompt_id, user_id)
 
@@ -103,7 +102,7 @@ async def update_tags(
     if not prompt:
         raise HTTPException(status_code=404, detail="Prompt not found")
     existing = list(prompt.tags or [])
-    merged = list(dict.fromkeys(existing + body.tags))  # deduplicate, preserve order
+    merged = list(dict.fromkeys(existing + body.tags))
     prompt.tags = merged
     await db.commit()
     return {"tags": merged}

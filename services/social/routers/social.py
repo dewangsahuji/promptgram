@@ -5,7 +5,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from database import get_db
 from schemas.social import LikeOut, CommentCreate, CommentOut
 from services import social_service
-from dependencies.auth import require_auth
 
 router = APIRouter(tags=["social"])
 
@@ -13,8 +12,8 @@ router = APIRouter(tags=["social"])
 @router.post("/like/{prompt_id}")
 async def toggle_like(
     prompt_id: UUID,
+    user_id: UUID,
     db: AsyncSession = Depends(get_db),
-    user_id: UUID = Depends(require_auth),
 ):
     return await social_service.toggle_like(db, user_id, prompt_id)
 
@@ -29,8 +28,8 @@ async def like_count(prompt_id: UUID, db: AsyncSession = Depends(get_db)):
 async def add_comment(
     prompt_id: UUID,
     body: CommentCreate,
+    user_id: UUID,
     db: AsyncSession = Depends(get_db),
-    user_id: UUID = Depends(require_auth),
 ):
     return await social_service.add_comment(db, user_id, prompt_id, body)
 
@@ -43,8 +42,8 @@ async def get_comments(prompt_id: UUID, db: AsyncSession = Depends(get_db)):
 @router.delete("/comment/{comment_id}", status_code=204)
 async def delete_comment(
     comment_id: UUID,
+    user_id: UUID,
     db: AsyncSession = Depends(get_db),
-    user_id: UUID = Depends(require_auth),
 ):
     await social_service.delete_comment(db, comment_id, user_id)
 
@@ -52,8 +51,8 @@ async def delete_comment(
 @router.post("/follow/{user_id}")
 async def toggle_follow(
     user_id: UUID,
+    current_user_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user_id: UUID = Depends(require_auth),
 ):
     return await social_service.toggle_follow(db, current_user_id, user_id)
 
