@@ -35,6 +35,24 @@ async def search_prompts(
     return await prompt_service.search_prompts(db, q, page, limit)
 
 
+# ─── SEMANTIC SEARCH ───────────────────────────────────────────────
+@router.get("/semantic-search", response_model=List[PromptOut])
+async def semantic_search_prompts(
+    q: str,
+    limit: int = 20,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    AI Semantic Search over images via AI Microservice.
+    Usage: GET /prompts/semantic-search?q=cyberpunk+samurai
+    """
+    if not q.strip():
+        raise HTTPException(status_code=400, detail="Search query cannot be empty")
+
+    return await prompt_service.semantic_search_prompts(db, q, limit)
+
+
+
 # ─── CREATE (with optional image) ─────────────────────────
 @router.post("/", response_model=PromptOut, status_code=status.HTTP_201_CREATED)
 async def create_prompt(

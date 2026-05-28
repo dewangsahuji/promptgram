@@ -187,7 +187,7 @@ services:
     volumes:
       - qdrant_data:/qdrant/storage
     healthcheck:
-      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/localhost/6333' 2>/dev/null && echo ok || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- http://localhost:6333/healthz | grep -q ok || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 10

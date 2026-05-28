@@ -11,6 +11,10 @@ _s3_kwargs = dict(
 if settings.S3_ENDPOINT_URL:
     # MinIO / S3-compatible endpoint (local dev)
     _s3_kwargs["endpoint_url"] = settings.S3_ENDPOINT_URL
+else:
+    from botocore.client import Config
+    _s3_kwargs["endpoint_url"] = f"https://s3.{settings.AWS_REGION}.amazonaws.com"
+    _s3_kwargs["config"] = Config(s3={'addressing_style': 'virtual'})
 
 s3 = boto3.client("s3", **_s3_kwargs)
 
@@ -28,7 +32,10 @@ def _url_for_key(key: str) -> str:
     """
     if settings.S3_ENDPOINT_URL:
         # MinIO: http://localhost:9000/bucket/key  (publicly accessible in dev)
-        return f"{settings.S3_ENDPOINT_URL}/{settings.S3_BUCKET_NAME}/{key}"
+        # Note: If S3_ENDPOINT_URL uses the internal docker hostname 'minio', 
+        # rewrite it to 'localhost' so the browser can resolve it!
+        endpoint = settings.S3_ENDPOINT_URL.replace("minio", "localhost")
+        return f"{endpoint}/{settings.S3_BUCKET_NAME}/{key}"
 
     # Real AWS S3 — generate a pre-signed URL (works even with Block Public Access ON)
     return s3.generate_presigned_url(

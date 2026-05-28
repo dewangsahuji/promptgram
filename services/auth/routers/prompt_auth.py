@@ -113,17 +113,18 @@ async def create_prompt(
         content = await image.read()
         try:
             async with httpx.AsyncClient(timeout=60.0) as client:
-                await client.post(
+                img_resp = await client.post(
                     f"{_PROMPT_BASE}/images/upload",
                     headers=headers,
                     params={"prompt_id": str(prompt_id)},
                     files={"file": (image.filename, content, image.content_type)},
                 )
-        except httpx.RequestError as exc:
+                img_resp.raise_for_status()
+        except (httpx.RequestError, httpx.HTTPStatusError) as exc:
             # Note: At this point, the prompt exists but the image upload failed.
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail=f"Prompt created, but image upload service is unavailable: {exc}",
+                detail=f"Prompt created, but image upload service failed: {exc}",
             )
 
     return Response(

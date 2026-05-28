@@ -106,6 +106,31 @@ async def list_prompts(
     return await _enrich(db, prompts)
 
 
+async def search_prompts(
+    db: AsyncSession,
+    query: str,
+    page: int = 1,
+    limit: int = 20,
+) -> List[dict]:
+    from sqlalchemy import or_, cast, String
+    db_query = (
+        select(Prompt)
+        .where(
+            or_(
+                Prompt.prompt_text.ilike(f"%{query}%"),
+                Prompt.title.ilike(f"%{query}%"),
+                cast(Prompt.tags, String).ilike(f"%{query}%")
+            )
+        )
+        .order_by(desc(Prompt.created_at))
+        .offset((page - 1) * limit)
+        .limit(limit)
+    )
+    result = await db.execute(db_query)
+    prompts = list(result.scalars().all())
+    return await _enrich(db, prompts)
+
+
 async def get_trending(db: AsyncSession, limit: int = 20) -> List[dict]:
     # COALESCE score to 0 so NULL doesn't break the sort
     result = await db.execute(
@@ -158,3 +183,68 @@ async def increment_views(db: AsyncSession, prompt_id: uuid.UUID):
     if prompt:
         prompt.views += 1
         await db.commit()
+
+
+async def semantic_search_prompts(
+    db: AsyncSession,
+    query: str,
+    limit: int = 20,
+) -> List[dict]:
+    """Hits the AI microservice for semantic image search and returns matching Prompts."""
+    ai_url = "http://ai-service:8004/ai/search"
+    
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        try:
+            resp = await client.post(ai_url, json={"query": query, "limit": limit})
+            resp.raise_for_status()
+            data = resp.json()
+        except Exception:
+            return []
+
+    if not data:
+        return []
+
+    scores = {}
+    image_ids = []
+    for item in data:
+        img_id_str = item.get("image_id")
+        if img_id_str:
+            try:
+                img_uuid = uuid.UUID(img_id_str)
+                image_ids.append(img_uuid)
+                scores[img_uuid] = item.get("score", 0.0)
+            except ValueError:
+                pass
+
+    if not image_ids:
+        return []
+
+    img_result = await db.execute(
+        select(Image).where(Image.id.in_(image_ids))
+    )
+    db_images = img_result.scalars().all()
+    
+    prompt_scores = {}
+    prompt_ids = []
+    for img in db_images:
+        prompt_ids.append(img.prompt_id)
+        sc = scores.get(img.id, 0.0)
+        if sc > prompt_scores.get(img.prompt_id, 0.0):
+            prompt_scores[img.prompt_id] = sc
+
+    if not prompt_ids:
+        return []
+
+    prompt_result = await db.execute(
+        select(Prompt).where(Prompt.id.in_(prompt_ids))
+    )
+    prompts = list(prompt_result.scalars().all())
+
+    enriched_prompts = await _enrich(db, prompts)
+    
+    for ep in enriched_prompts:
+        ep["score"] = prompt_scores.get(ep["id"], 0.0)
+        
+    sorted_prompts = sorted(enriched_prompts, key=lambda p: p["score"], reverse=True)
+    return sorted_prompts
+

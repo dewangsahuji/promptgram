@@ -39,6 +39,7 @@ async def search_vectors(query_vector: list[float], limit: int = 20) -> list:
         query_vector=query_vector,
         limit=limit,
     )
+    print(f"Qdrant search results: {results}")
     return results
 
 

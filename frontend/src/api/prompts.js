@@ -9,8 +9,14 @@ export const getTrending = () =>
 export const getPrompt = (id) =>
   client.get(`/prompts/${id}`).then(r => r.data)
 
-export const createPrompt = (data) =>
-  client.post('/prompts/', data).then(r => r.data)
+export const createPrompt = (data, onProgress) => {
+  const config = {}
+  if (data instanceof FormData) {
+    config.headers = { 'Content-Type': 'multipart/form-data' }
+    config.onUploadProgress = e => onProgress && onProgress(Math.round(e.loaded * 100 / e.total))
+  }
+  return client.post('/prompts/', data, config).then(r => r.data)
+}
 
 export const updatePrompt = (id, data) =>
   client.patch(`/prompts/${id}`, data).then(r => r.data)
@@ -21,14 +27,5 @@ export const deletePrompt = (id) =>
 export const getImages = (promptId) =>
   client.get(`/images/prompt/${promptId}`).then(r => r.data)
 
-export const uploadImage = (promptId, file, onProgress) => {
-  const form = new FormData()
-  form.append('file', file)
-  return client.post(`/images/upload?prompt_id=${promptId}`, form, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-    onUploadProgress: e => onProgress && onProgress(Math.round(e.loaded * 100 / e.total))
-  }).then(r => r.data)
-}
-
-export const semanticSearch = (query, limit = 20) =>
-  client.post('/ai/search', { query, limit }).then(r => r.data)
+export const searchPrompts = (query, page = 1, limit = 20) =>
+  client.get('/prompts/search', { params: { q: query, page, limit } }).then(r => r.data)

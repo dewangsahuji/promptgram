@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { CloudUpload, CheckCircle, ImagePlus, X } from 'lucide-react'
-import { createPrompt, uploadImage } from '../api/prompts'
+import { createPrompt } from '../api/prompts'
 import { useAuth } from '../context/AuthContext'
 
 const MODELS = ['GPT-4o', 'Claude 3.5 Sonnet', 'Gemini 1.5 Pro', 'Llama 3.1', 'Other']
@@ -51,12 +51,19 @@ export default function UploadPage() {
     setError(''); setLoading(true)
     try {
       const tags = form.tags.split(',').map(t => t.trim()).filter(Boolean)
-      const prompt = await createPrompt({ ...form, tags })
-      if (file) await uploadImage(prompt.id, file, setProgress)
+      const formData = new FormData()
+      formData.append('title', form.title)
+      formData.append('prompt_text', form.prompt_text)
+      formData.append('model_used', form.model_used)
+      tags.forEach(t => formData.append('tags', t))
+      if (file) formData.append('image', file)
+      
+      const prompt = await createPrompt(formData, setProgress)
       setSuccess(true)
       setTimeout(() => navigate(`/prompt/${prompt.id}`), 1200)
     } catch (err) {
-      setError(err.response?.data?.detail || 'Upload failed. Please try again.')
+      const detail = err.response?.data?.detail
+      setError(typeof detail === 'string' ? detail : (Array.isArray(detail) ? 'Please fill in all required fields.' : 'Upload failed. Please try again.'))
     } finally { setLoading(false) }
   }
 

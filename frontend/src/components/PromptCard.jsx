@@ -73,16 +73,17 @@ export default function PromptCard({ prompt }) {
   const initials = username.slice(0, 2).toUpperCase()
   const avatarGrad = AVATAR_GRADIENTS[(initials.charCodeAt(0) || 65) % AVATAR_GRADIENTS.length]
   const timeAgo = getTimeAgo(prompt.created_at)
+  const imageUrl = prompt.images?.[0]?.thumbnail_url || prompt.images?.[0]?.s3_url || prompt.thumbnail_url
 
   return (
     <div className="pg-card" onClick={() => navigate(`/prompt/${prompt.id}`)}>
       <div className="card-crown" />
 
       {/* Thumbnail image — shown when available */}
-      {prompt.thumbnail_url && (
+      {imageUrl && (
         <div className="card-image-wrap">
           <img
-            src={prompt.thumbnail_url}
+            src={imageUrl}
             alt={prompt.title}
             className="card-thumb"
             loading="lazy"

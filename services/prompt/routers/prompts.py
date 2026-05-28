@@ -32,6 +32,35 @@ async def list_prompts(
     return [PromptOut.model_validate(p) for p in enriched]
 
 
+@router.get("/search", response_model=List[PromptOut])
+async def search_prompts(
+    q: str,
+    page: int = 1,
+    limit: int = 20,
+    db: AsyncSession = Depends(get_db),
+):
+    if not q.strip():
+        raise HTTPException(status_code=400, detail="Search query cannot be empty")
+    enriched = await prompt_service.search_prompts(db, q, page, limit)
+    return [PromptOut.model_validate(p) for p in enriched]
+
+
+@router.get("/semantic-search", response_model=List[PromptOut])
+async def semantic_search_prompts(
+    q: str,
+    limit: int = 20,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    AI Semantic Search over images via AI Microservice.
+    """
+    if not q.strip():
+        raise HTTPException(status_code=400, detail="Search query cannot be empty")
+
+    enriched = await prompt_service.semantic_search_prompts(db, q, limit)
+    return [PromptOut.model_validate(p) for p in enriched]
+
+
 @router.get("/trending", response_model=List[PromptOut])
 async def trending(
     redis: Redis = Depends(get_redis),
