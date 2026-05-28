@@ -1,0 +1,291 @@
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0;}
+  .pg-root{display:flex;height:620px;font-family:'Inter',sans-serif;background:#F0F6FF;overflow:hidden;border-radius:16px;position:relative;}
+
+  /* SIDEBAR — crisp dark navy, whisper of glass */
+  .pg-sidebar{width:200px;flex-shrink:0;position:relative;z-index:10;display:flex;flex-direction:column;padding:20px 0;}
+  .sidebar-glass{
+    position:absolute;inset:0;
+    background:linear-gradient(180deg,rgba(10,24,55,0.96) 0%,rgba(8,28,72,0.95) 100%);
+    backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
+    border-right:1px solid rgba(245,215,110,0.13);
+    z-index:0;
+  }
+  /* subtle inner-right glow edge so it reads as glass not solid */
+  .sidebar-glass::after{
+    content:'';position:absolute;top:0;right:0;width:1px;height:100%;
+    background:linear-gradient(180deg,transparent,rgba(245,215,110,0.18),rgba(6,182,212,0.12),transparent);
+  }
+  .sidebar-content{position:relative;z-index:1;display:flex;flex-direction:column;height:100%;}
+  .pg-logo{display:flex;align-items:center;padding:0 18px 24px;border-bottom:1px solid rgba(212,160,23,0.18);}
+  .pg-logo-text{font-size:15px;font-weight:700;background:linear-gradient(90deg,#F5D76E 0%,#D4A017 40%,#F5D76E 70%,#B8860B 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:0.01em;}
+  .pg-nav{flex:1;padding:16px 10px;}
+  .pg-nav-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;cursor:pointer;color:rgba(255,255,255,0.46);font-size:13px;transition:all 0.2s;margin-bottom:2px;}
+  .pg-nav-item.active{background:rgba(6,182,212,0.16);color:#06B6D4;box-shadow:0 0 0 1px rgba(6,182,212,0.22);}
+  .pg-nav-item:hover:not(.active){color:rgba(255,255,255,0.82);background:rgba(255,255,255,0.05);}
+  .pg-nav-item i{font-size:16px;}
+  .pg-user{display:flex;align-items:center;gap:10px;padding:14px 16px;border-top:1px solid rgba(212,160,23,0.18);margin-top:auto;}
+  .pg-avatar-grad{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#0a2250,#B8860B);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#F5D76E;flex-shrink:0;}
+  .pg-user-info p:first-child{font-size:12px;font-weight:500;color:rgba(255,255,255,0.85);}
+  .pg-user-info p:last-child{font-size:11px;color:rgba(255,255,255,0.32);}
+
+  /* FEED */
+  .pg-feed{flex:1;overflow-y:auto;padding:20px 16px;position:relative;}
+  .pg-feed::-webkit-scrollbar{width:4px;}
+  .pg-feed::-webkit-scrollbar-thumb{background:rgba(6,182,212,0.3);border-radius:4px;}
+  .pg-feed-bg{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:0;}
+  .orb{position:absolute;border-radius:50%;filter:blur(60px);opacity:0.18;animation:driftOrb linear infinite;}
+  .orb1{width:220px;height:220px;background:radial-gradient(circle,#0284C7,transparent);top:-40px;left:20%;animation-duration:22s;}
+  .orb2{width:180px;height:180px;background:radial-gradient(circle,#06B6D4,transparent);top:40%;right:5%;animation-duration:28s;animation-delay:-8s;}
+  .orb3{width:260px;height:260px;background:radial-gradient(circle,#0a2250,transparent);bottom:-60px;left:10%;animation-duration:35s;animation-delay:-14s;}
+  @keyframes driftOrb{0%{transform:translate(0,0);}25%{transform:translate(30px,-20px);}50%{transform:translate(-20px,30px);}75%{transform:translate(20px,10px);}100%{transform:translate(0,0);}}
+  .dust{position:absolute;width:3px;height:3px;border-radius:50%;background:#D4A017;opacity:0;animation:floatDust linear infinite;}
+  @keyframes floatDust{0%{opacity:0;transform:translateY(0);}20%{opacity:0.6;}80%{opacity:0.3;}100%{opacity:0;transform:translateY(-80px);}}
+  .gold-leaf{position:absolute;pointer-events:none;opacity:0;animation:leafFlow linear infinite;}
+  @keyframes leafFlow{
+    0%  {opacity:0;transform:translate(0,0) rotate(var(--r0));}
+    6%  {opacity:var(--peak);}
+    88% {opacity:calc(var(--peak)*0.6);}
+    100%{opacity:0;transform:translate(var(--dx),var(--dy)) rotate(var(--r1));}
+  }
+  .feed-header{position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+  .feed-header h2{font-size:16px;font-weight:500;color:#0c1a3d;}
+  .pg-share-btn{padding:7px 14px;border-radius:8px;border:1px solid rgba(6,182,212,0.4);background:rgba(6,182,212,0.06);color:#0284C7;font-size:12px;font-weight:500;cursor:pointer;transition:all 0.2s;font-family:'Inter',sans-serif;}
+  .pg-share-btn:hover{border-color:#D4A017;color:#B8860B;background:rgba(212,160,23,0.06);}
+  .pg-card{position:relative;z-index:1;background:rgba(255,255,255,0.72);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(6,182,212,0.18);border-radius:12px;margin-bottom:12px;overflow:hidden;transition:border-color 0.2s,transform 0.2s;}
+  .pg-card:hover{border-color:rgba(212,160,23,0.4);transform:translateY(-1px);}
+  .card-crown{height:2px;background:linear-gradient(90deg,#06B6D4,#0284C7,#B8860B,#F5D76E,#D4A017);}
+  .card-body{padding:14px 16px;}
+  .card-head{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+  .card-avatar{width:36px;height:36px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;}
+  .av1{background:linear-gradient(135deg,#06B6D4,#0284C7);color:#fff;}
+  .av2{background:linear-gradient(135deg,#0a2250,#0284C7);color:#F5D76E;}
+  .av3{background:linear-gradient(135deg,#B8860B,#F5D76E);color:#0c1a3d;}
+  .av4{background:linear-gradient(135deg,#4A6080,#0c1a3d);color:#06B6D4;}
+  .card-author{flex:1;}
+  .card-author p:first-child{font-size:13px;font-weight:500;color:#0c1a3d;}
+  .card-author p:last-child{font-size:11px;color:#4A6080;}
+  .model-badge{padding:3px 8px;border-radius:20px;font-size:10px;font-weight:500;}
+  .badge-claude{background:rgba(6,182,212,0.12);color:#0284C7;border:1px solid rgba(6,182,212,0.25);}
+  .badge-gpt{background:rgba(212,160,23,0.12);color:#B8860B;border:1px solid rgba(212,160,23,0.25);}
+  .badge-gemini{background:rgba(220,80,120,0.1);color:#c0485c;border:1px solid rgba(220,80,120,0.2);}
+  .badge-llama{background:rgba(120,80,200,0.1);color:#7048c8;border:1px solid rgba(120,80,200,0.2);}
+  .prompt-block{background:rgba(12,26,61,0.04);border:1px solid rgba(12,26,61,0.08);border-left:3px solid #06B6D4;border-radius:6px;padding:10px 12px;font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#0c1a3d;line-height:1.6;margin-bottom:10px;}
+  .hashtag-row{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px;}
+  .hashtag{padding:3px 8px;background:rgba(6,182,212,0.07);border-radius:20px;font-size:11px;color:#0284C7;cursor:pointer;}
+  .card-actions{display:flex;align-items:center;gap:4px;padding-top:10px;border-top:1px solid rgba(12,26,61,0.06);}
+  .action-btn{display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:6px;border:none;background:transparent;cursor:pointer;font-size:11px;color:#4A6080;font-family:'Inter',sans-serif;transition:all 0.15s;}
+  .action-btn:hover{background:rgba(6,182,212,0.08);color:#0284C7;}
+  .action-btn i{font-size:14px;}
+  .action-btn.liked{color:#e24b4a;}
+  .spacer{flex:1;}
+
+  /* RIGHT PANEL */
+  .pg-right{width:220px;flex-shrink:0;position:relative;background:#fff;padding:16px 14px;overflow:hidden;border-left:1px solid rgba(6,182,212,0.1);}
+  .right-content{position:relative;z-index:1;}
+  .gold-splash{position:absolute;border-radius:50%;pointer-events:none;filter:blur(var(--sb));opacity:var(--so);background:radial-gradient(circle,var(--sc) 0%,transparent 70%);}
+  .panel-section{margin-bottom:18px;}
+  .panel-title{font-size:11px;font-weight:600;color:#4A6080;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:10px;}
+  .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+  .stat-box{background:#F0F6FF;border-radius:8px;padding:10px;text-align:center;}
+  .stat-num{font-size:18px;font-weight:600;background:linear-gradient(90deg,#0c1a3d,#B8860B);-webkit-background-clip:text;-webkit-text-fill-color:transparent;display:block;line-height:1.2;}
+  .stat-label{font-size:10px;color:#4A6080;margin-top:2px;}
+  .gold-divider{height:1px;background:linear-gradient(90deg,transparent,#D4A017,transparent);margin:14px 0;opacity:0.5;}
+  .trend-item{display:flex;align-items:center;gap:8px;padding:6px 0;}
+  .trend-rank{font-size:14px;font-weight:700;background:linear-gradient(90deg,#0c1a3d,#D4A017);-webkit-background-clip:text;-webkit-text-fill-color:transparent;min-width:16px;}
+  .trend-info p:first-child{font-size:12px;font-weight:500;color:#0c1a3d;}
+  .trend-info p:last-child{font-size:10px;color:#4A6080;}
+  .suggest-item{display:flex;align-items:center;gap:8px;padding:6px 0;}
+  .s-av{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;}
+  .s-av1{background:linear-gradient(135deg,#06B6D4,#0a2250);color:#fff;}
+  .s-av2{background:linear-gradient(135deg,#D4A017,#B8860B);color:#fff;}
+  .s-av3{background:linear-gradient(135deg,#0284C7,#4A6080);color:#fff;}
+  .suggest-info{flex:1;}
+  .suggest-info p:first-child{font-size:11px;font-weight:500;color:#0c1a3d;}
+  .suggest-info p:last-child{font-size:10px;color:#4A6080;}
+  .follow-btn{padding:4px 9px;border-radius:6px;border:1px solid rgba(6,182,212,0.4);background:transparent;font-size:10px;color:#0284C7;cursor:pointer;font-family:'Inter',sans-serif;}
+</style>
+
+<h2 class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">Promptgram — refined sidebar glass, gold leaves, gold splashes</h2>
+
+<div class="pg-root">
+
+  <!-- SIDEBAR -->
+  <div class="pg-sidebar">
+    <div class="sidebar-glass"></div>
+    <div class="sidebar-content">
+      <div class="pg-logo">
+        <span class="pg-logo-text">Promptgram</span>
+      </div>
+      <nav class="pg-nav">
+        <div class="pg-nav-item active"><i class="ti ti-layout-grid" aria-hidden="true"></i>Feed</div>
+        <div class="pg-nav-item"><i class="ti ti-compass" aria-hidden="true"></i>Explore</div>
+        <div class="pg-nav-item"><i class="ti ti-bookmark" aria-hidden="true"></i>Saved</div>
+        <div class="pg-nav-item"><i class="ti ti-bell" aria-hidden="true"></i>Alerts</div>
+        <div class="pg-nav-item"><i class="ti ti-message" aria-hidden="true"></i>Messages</div>
+        <div class="pg-nav-item"><i class="ti ti-trophy" aria-hidden="true"></i>Rankings</div>
+        <div class="pg-nav-item"><i class="ti ti-settings" aria-hidden="true"></i>Settings</div>
+      </nav>
+      <div class="pg-user">
+        <div class="pg-avatar-grad">AZ</div>
+        <div class="pg-user-info"><p>Ayla Zayn</p><p>@ayla.zayn</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FEED -->
+  <div class="pg-feed" id="feedCol">
+    <div class="pg-feed-bg" id="feedBg">
+      <div class="orb orb1"></div><div class="orb orb2"></div><div class="orb orb3"></div>
+      <div class="dust" style="left:15%;top:80%;animation-duration:6s;"></div>
+      <div class="dust" style="left:35%;top:90%;animation-duration:8s;animation-delay:2s;width:2px;height:2px;"></div>
+      <div class="dust" style="left:58%;top:75%;animation-duration:7s;animation-delay:4s;"></div>
+      <div class="dust" style="left:72%;top:85%;animation-duration:9s;animation-delay:1s;width:2px;height:2px;"></div>
+    </div>
+
+    <div class="feed-header" style="position:relative;z-index:1;">
+      <h2>For You</h2>
+      <button class="pg-share-btn"><i class="ti ti-plus" aria-hidden="true"></i> Share a Prompt</button>
+    </div>
+
+    <div class="pg-card"><div class="card-crown"></div><div class="card-body">
+      <div class="card-head"><div class="card-avatar av1">MR</div><div class="card-author"><p>Maya Russo</p><p>@maya.russo · 2h ago</p></div><span class="model-badge badge-claude">Claude</span></div>
+      <div class="prompt-block">You are a master sommelier. Given a meal I describe, suggest a wine pairing and explain the harmony between flavors in exactly 3 sentences. Meal: [MEAL]</div>
+      <div class="hashtag-row"><span class="hashtag">#wine</span><span class="hashtag">#food</span><span class="hashtag">#roleplay</span><span class="hashtag">#sommelier</span></div>
+      <div class="card-actions"><button class="action-btn liked"><i class="ti ti-heart-filled" aria-hidden="true"></i> 248</button><button class="action-btn"><i class="ti ti-message-circle" aria-hidden="true"></i> 34</button><div class="spacer"></div><button class="action-btn"><i class="ti ti-copy" aria-hidden="true"></i></button><button class="action-btn"><i class="ti ti-bookmark" aria-hidden="true"></i></button></div>
+    </div></div>
+
+    <div class="pg-card"><div class="card-crown"></div><div class="card-body">
+      <div class="card-head"><div class="card-avatar av2">KS</div><div class="card-author"><p>Karim Saleh</p><p>@k.saleh · 5h ago</p></div><span class="model-badge badge-gpt">GPT</span></div>
+      <div class="prompt-block">Rewrite this code as if Shakespeare wrote it — keep it functional Python but add period-accurate dramatic commentary as inline comments. Code: [PASTE CODE]</div>
+      <div class="hashtag-row"><span class="hashtag">#code</span><span class="hashtag">#creative</span><span class="hashtag">#python</span></div>
+      <div class="card-actions"><button class="action-btn"><i class="ti ti-heart" aria-hidden="true"></i> 412</button><button class="action-btn"><i class="ti ti-message-circle" aria-hidden="true"></i> 57</button><div class="spacer"></div><button class="action-btn"><i class="ti ti-copy" aria-hidden="true"></i></button><button class="action-btn"><i class="ti ti-bookmark" aria-hidden="true"></i></button></div>
+    </div></div>
+
+    <div class="pg-card"><div class="card-crown"></div><div class="card-body">
+      <div class="card-head"><div class="card-avatar av3">NL</div><div class="card-author"><p>Noor Levi</p><p>@noor.levi · 1d ago</p></div><span class="model-badge badge-gemini">Gemini</span></div>
+      <div class="prompt-block">Act as my brutally honest editor. Read my draft and give me exactly 5 improvements — no encouragement, no softening. Just truth. Draft: [TEXT]</div>
+      <div class="hashtag-row"><span class="hashtag">#writing</span><span class="hashtag">#editing</span><span class="hashtag">#productivity</span></div>
+      <div class="card-actions"><button class="action-btn"><i class="ti ti-heart" aria-hidden="true"></i> 187</button><button class="action-btn"><i class="ti ti-message-circle" aria-hidden="true"></i> 29</button><div class="spacer"></div><button class="action-btn"><i class="ti ti-copy" aria-hidden="true"></i></button><button class="action-btn"><i class="ti ti-bookmark" aria-hidden="true"></i></button></div>
+    </div></div>
+
+    <div class="pg-card"><div class="card-crown"></div><div class="card-body">
+      <div class="card-head"><div class="card-avatar av4">DT</div><div class="card-author"><p>Dev Thakur</p><p>@dev.t · 2d ago</p></div><span class="model-badge badge-llama">Llama</span></div>
+      <div class="prompt-block">You are a 1920s newspaper editor. Rewrite modern tech headlines in the style of sensationalist tabloid journalism from that era. Headline: [HEADLINE]</div>
+      <div class="hashtag-row"><span class="hashtag">#persona</span><span class="hashtag">#history</span><span class="hashtag">#fun</span></div>
+      <div class="card-actions"><button class="action-btn"><i class="ti ti-heart" aria-hidden="true"></i> 93</button><button class="action-btn"><i class="ti ti-message-circle" aria-hidden="true"></i> 11</button><div class="spacer"></div><button class="action-btn"><i class="ti ti-copy" aria-hidden="true"></i></button><button class="action-btn"><i class="ti ti-bookmark" aria-hidden="true"></i></button></div>
+    </div></div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="pg-right" id="rightPanel">
+    <div class="right-content">
+      <div class="panel-section">
+        <div class="panel-title">Your Stats</div>
+        <div class="stat-grid">
+          <div class="stat-box"><span class="stat-num">2.4k</span><div class="stat-label">Prompts</div></div>
+          <div class="stat-box"><span class="stat-num">18k</span><div class="stat-label">Likes</div></div>
+          <div class="stat-box"><span class="stat-num">941</span><div class="stat-label">Saved</div></div>
+          <div class="stat-box"><span class="stat-num">312</span><div class="stat-label">Followers</div></div>
+        </div>
+      </div>
+      <div class="gold-divider"></div>
+      <div class="panel-section">
+        <div class="panel-title">Trending Tags</div>
+        <div class="trend-item"><span class="trend-rank">1</span><div class="trend-info"><p>#chainofthought</p><p>4.2k posts</p></div></div>
+        <div class="trend-item"><span class="trend-rank">2</span><div class="trend-info"><p>#roleplay</p><p>3.8k posts</p></div></div>
+        <div class="trend-item"><span class="trend-rank">3</span><div class="trend-info"><p>#writing</p><p>2.9k posts</p></div></div>
+        <div class="trend-item"><span class="trend-rank">4</span><div class="trend-info"><p>#code</p><p>2.1k posts</p></div></div>
+        <div class="trend-item"><span class="trend-rank">5</span><div class="trend-info"><p>#persona</p><p>1.7k posts</p></div></div>
+      </div>
+      <div class="gold-divider"></div>
+      <div class="panel-section">
+        <div class="panel-title">Suggested</div>
+        <div class="suggest-item"><div class="s-av s-av1">AA</div><div class="suggest-info"><p>Amira Ahm.</p><p>920 prompts</p></div><button class="follow-btn">Follow</button></div>
+        <div class="suggest-item"><div class="s-av s-av2">LN</div><div class="suggest-info"><p>Luca Nero</p><p>614 prompts</p></div><button class="follow-btn">Follow</button></div>
+        <div class="suggest-item"><div class="s-av s-av3">SJ</div><div class="suggest-info"><p>Sara Jeon</p><p>488 prompts</p></div><button class="follow-btn">Follow</button></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  /* ── LEAVES left → right ── */
+  const bg = document.getElementById('feedBg');
+  const goldShades = ['#D4A017','#B8860B','#F5D76E','#C8900A','#E8B830','#F0C040'];
+  const leafShapes = [
+    'M8,0 C13,2 15,9 12,15 C10,19 6,19 4,15 C1,9 3,2 8,0 Z',
+    'M8,1 C14,2 15,10 11,16 C9,20 5,19 3,15 C0,9 2,2 8,1 Z',
+    'M6,0 C12,-1 16,7 12,14 C9,19 3,18 1,13 C-1,7 2,1 6,0 Z',
+  ];
+  function spawnLeaf(){
+    const ns='http://www.w3.org/2000/svg';
+    const svg=document.createElementNS(ns,'svg');
+    const h=9+Math.random()*8; const w=h*0.85;
+    svg.setAttribute('width',w); svg.setAttribute('height',h);
+    svg.setAttribute('viewBox','0 0 16 20');
+    const color=goldShades[Math.floor(Math.random()*goldShades.length)];
+    const shape=leafShapes[Math.floor(Math.random()*leafShapes.length)];
+    const fill=document.createElementNS(ns,'path');
+    fill.setAttribute('d',shape); fill.setAttribute('fill',color); fill.setAttribute('opacity','0.88');
+    const vein=document.createElementNS(ns,'line');
+    vein.setAttribute('x1','8');vein.setAttribute('y1','1');vein.setAttribute('x2','8');vein.setAttribute('y2','18');
+    vein.setAttribute('stroke','#0c1a3d');vein.setAttribute('stroke-width','0.8');vein.setAttribute('opacity','0.22');
+    const defs=document.createElementNS(ns,'defs');
+    const filt=document.createElementNS(ns,'filter');
+    const fid='lf'+Math.random().toString(36).slice(2,6);
+    filt.setAttribute('id',fid);
+    const gb=document.createElementNS(ns,'feGaussianBlur');
+    gb.setAttribute('stdDeviation',(Math.random()*1.4+0.3).toFixed(1));
+    filt.appendChild(gb); defs.appendChild(filt);
+    fill.setAttribute('filter','url(#'+fid+')');
+    svg.appendChild(defs);svg.appendChild(fill);svg.appendChild(vein);
+    const startY=Math.random()*580-40;
+    const dx=420*(0.55+Math.random()*0.55);
+    const dy=30+Math.random()*90;
+    const r0=(Math.random()-0.5)*60;
+    const r1=r0+(Math.random()*260+80)*(Math.random()<0.5?1:-1);
+    const dur=1.8+Math.random()*1.6;
+    const peak=(0.5+Math.random()*0.45).toFixed(2);
+    svg.classList.add('gold-leaf');
+    svg.style.left='-20px'; svg.style.top=startY+'px';
+    svg.style.setProperty('--dx',dx+'px'); svg.style.setProperty('--dy',dy+'px');
+    svg.style.setProperty('--r0',r0+'deg'); svg.style.setProperty('--r1',r1+'deg');
+    svg.style.setProperty('--peak',peak);
+    svg.style.animationDuration=dur+'s';
+    svg.style.animationDelay=(-(Math.random()*dur))+'s';
+    bg.appendChild(svg);
+    svg.addEventListener('animationiteration',()=>{
+      svg.style.top=(Math.random()*580-40)+'px';
+      svg.style.setProperty('--dx',(420*(0.55+Math.random()*0.55))+'px');
+      svg.style.setProperty('--dy',(30+Math.random()*90)+'px');
+    });
+  }
+  for(let i=0;i<22;i++) spawnLeaf();
+
+  /* ── GOLD SPLASHES right panel ── */
+  const rp=document.getElementById('rightPanel');
+  const splashDefs=[
+    {w:110,h:110,x:'10%', y:'5%',  blur:28,opacity:0.22,color:'rgba(212,160,23,1)'},
+    {w:80, h:80, x:'55%', y:'12%', blur:20,opacity:0.16,color:'rgba(245,215,110,1)'},
+    {w:140,h:140,x:'-15%',y:'38%', blur:35,opacity:0.18,color:'rgba(184,134,11,1)'},
+    {w:60, h:60, x:'70%', y:'50%', blur:16,opacity:0.20,color:'rgba(240,192,64,1)'},
+    {w:100,h:100,x:'30%', y:'68%', blur:30,opacity:0.14,color:'rgba(200,144,10,1)'},
+    {w:70, h:70, x:'80%', y:'78%', blur:18,opacity:0.18,color:'rgba(212,160,23,1)'},
+    {w:50, h:50, x:'5%',  y:'88%', blur:14,opacity:0.13,color:'rgba(245,215,110,1)'},
+  ];
+  splashDefs.forEach(s=>{
+    const el=document.createElement('div');
+    el.className='gold-splash';
+    el.style.width=s.w+'px'; el.style.height=s.h+'px';
+    el.style.left=s.x; el.style.top=s.y;
+    el.style.setProperty('--sb',s.blur+'px');
+    el.style.setProperty('--so',s.opacity);
+    el.style.setProperty('--sc',s.color);
+    rp.insertBefore(el,rp.firstChild);
+  });
+})();
+</script>

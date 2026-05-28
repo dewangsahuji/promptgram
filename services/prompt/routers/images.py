@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from pydantic import BaseModel
 from database import get_db
-from s3_client import upload_to_s3, delete_from_s3
+from s3_client import upload_to_s3, delete_from_s3, _url_for_key
 from models.image import Image
 from schemas.image import ImageOut
 from dependencies.auth import require_auth
@@ -33,6 +33,21 @@ async def generate_thumbnail(content: bytes, thumb_key: str) -> str:
 
     thumb_bytes = await asyncio.to_thread(_make_thumbnail)
     return await upload_to_s3(thumb_bytes, thumb_key, "image/png")
+
+
+# ─── Helper: build fresh ImageOut with regenerated presigned URLs ─────────────
+
+def _image_out(img: Image) -> ImageOut:
+    """Return an ImageOut with fresh (pre-signed) URLs derived from the stored s3_key."""
+    thumb_key = f"thumbnails/{img.s3_key.split('/')[-1]}"
+    return ImageOut(
+        id=img.id,
+        prompt_id=img.prompt_id,
+        s3_url=_url_for_key(img.s3_key),
+        thumbnail_url=_url_for_key(thumb_key),
+        nsfw=img.nsfw,
+        created_at=img.created_at,
+    )
 
 
 # ─── Helper: call AI pipeline as BackgroundTask ───────────────────────────────
@@ -70,8 +85,12 @@ async def upload_image(
     s3_key = f"originals/{image_uuid}.png"
     thumb_key = f"thumbnails/{image_uuid}.png"
 
-    s3_url = await upload_to_s3(content, s3_key, file.content_type)
-    thumb_url = await generate_thumbnail(content, thumb_key)
+    await upload_to_s3(content, s3_key, file.content_type)
+    await generate_thumbnail(content, thumb_key)
+
+    # Store only the s3_key — URLs are regenerated on read
+    s3_url = _url_for_key(s3_key)
+    thumb_url = _url_for_key(thumb_key)
 
     image = Image(
         prompt_id=prompt_id,
@@ -86,7 +105,7 @@ async def upload_image(
     # Trigger AI pipeline in the background (non-blocking)
     background_tasks.add_task(_trigger_ai_pipeline, str(image.id))
 
-    return image
+    return _image_out(image)
 
 
 # ─── List images for a prompt ────────────────────────────────────────────────
@@ -97,10 +116,11 @@ async def get_images_for_prompt(
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(select(Image).where(Image.prompt_id == prompt_id))
-    return list(result.scalars().all())
+    images = list(result.scalars().all())
+    return [_image_out(img) for img in images]
 
 
-# ─── Get single image (used by AI service pipeline) ──────────────────────────
+# ─── Get single image ────────────────────────────────────────────────────────
 
 @router.get("/{image_id}", response_model=ImageOut)
 async def get_image(image_id: UUID, db: AsyncSession = Depends(get_db)):
@@ -108,7 +128,7 @@ async def get_image(image_id: UUID, db: AsyncSession = Depends(get_db)):
     image = result.scalars().first()
     if not image:
         raise HTTPException(status_code=404, detail="Image not found")
-    return image
+    return _image_out(image)
 
 
 # ─── Delete ───────────────────────────────────────────────────────────────────
@@ -124,9 +144,8 @@ async def delete_image(
     if not image:
         raise HTTPException(status_code=404, detail="Image not found")
     await delete_from_s3(image.s3_key)
-    if image.thumbnail_url:
-        thumb_key = f"thumbnails/{image.s3_key.split('/')[-1]}"
-        await delete_from_s3(thumb_key)
+    thumb_key = f"thumbnails/{image.s3_key.split('/')[-1]}"
+    await delete_from_s3(thumb_key)
     await db.delete(image)
     await db.commit()
 

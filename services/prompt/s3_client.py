@@ -14,13 +14,28 @@ if settings.S3_ENDPOINT_URL:
 
 s3 = boto3.client("s3", **_s3_kwargs)
 
+# Pre-signed URL expiry — 7 days (max for IAM role-based credentials is 12h,
+# but for regular IAM user keys it can be up to 7 days)
+PRESIGN_EXPIRY = 60 * 60 * 24 * 7  # 7 days in seconds
 
-def _public_url(key: str) -> str:
-    """Build the public URL for an object."""
+
+def _url_for_key(key: str) -> str:
+    """
+    Return a URL for an S3 object.
+
+    - For MinIO (local dev): plain public URL via the endpoint.
+    - For real AWS S3: pre-signed URL so private-bucket objects load in browsers.
+    """
     if settings.S3_ENDPOINT_URL:
-        # MinIO: http://localhost:9000/bucket/key
+        # MinIO: http://localhost:9000/bucket/key  (publicly accessible in dev)
         return f"{settings.S3_ENDPOINT_URL}/{settings.S3_BUCKET_NAME}/{key}"
-    return f"https://{settings.S3_BUCKET_NAME}.s3.{settings.AWS_REGION}.amazonaws.com/{key}"
+
+    # Real AWS S3 — generate a pre-signed URL (works even with Block Public Access ON)
+    return s3.generate_presigned_url(
+        "get_object",
+        Params={"Bucket": settings.S3_BUCKET_NAME, "Key": key},
+        ExpiresIn=PRESIGN_EXPIRY,
+    )
 
 
 async def ensure_bucket_exists():
@@ -31,7 +46,6 @@ async def ensure_bucket_exists():
         except Exception:
             try:
                 if settings.S3_ENDPOINT_URL:
-                    # MinIO doesn't need LocationConstraint for us-east-1 equivalent
                     s3.create_bucket(Bucket=settings.S3_BUCKET_NAME)
                 else:
                     s3.create_bucket(
@@ -45,6 +59,7 @@ async def ensure_bucket_exists():
 
 
 async def upload_to_s3(data: bytes, key: str, content_type: str) -> str:
+    """Upload bytes to S3/MinIO and return a viewable URL."""
     await asyncio.to_thread(
         s3.put_object,
         Bucket=settings.S3_BUCKET_NAME,
@@ -52,7 +67,12 @@ async def upload_to_s3(data: bytes, key: str, content_type: str) -> str:
         Body=data,
         ContentType=content_type,
     )
-    return _public_url(key)
+    return _url_for_key(key)
+
+
+async def get_presigned_url(key: str) -> str:
+    """Generate a fresh pre-signed URL for an existing object (e.g. when refreshing)."""
+    return await asyncio.to_thread(_url_for_key, key)
 
 
 async def delete_from_s3(key: str):

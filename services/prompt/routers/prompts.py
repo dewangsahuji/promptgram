@@ -28,7 +28,8 @@ async def list_prompts(
     limit: int = 20,
     db: AsyncSession = Depends(get_db),
 ):
-    return await prompt_service.list_prompts(db, page, limit)
+    enriched = await prompt_service.list_prompts(db, page, limit)
+    return [PromptOut.model_validate(p) for p in enriched]
 
 
 @router.get("/trending", response_model=List[PromptOut])
@@ -39,10 +40,10 @@ async def trending(
     cached = await redis.get("trending")
     if cached:
         return json.loads(cached)
-    results = await prompt_service.get_trending(db)
-    serialized = [PromptOut.model_validate(r).model_dump(mode="json") for r in results]
-    await redis.setex("trending", 600, json.dumps(serialized, default=str))
-    return results
+    enriched = await prompt_service.get_trending(db)
+    validated = [PromptOut.model_validate(p).model_dump(mode="json") for p in enriched]
+    await redis.setex("trending", 300, json.dumps(validated, default=str))
+    return [PromptOut.model_validate(p) for p in enriched]
 
 
 @router.get("/{prompt_id}", response_model=PromptOut)

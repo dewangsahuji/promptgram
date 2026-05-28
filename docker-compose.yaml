@@ -2,6 +2,17 @@
 
 services:
 
+  # ─── Frontend (React SPA) ────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: promptgram_frontend
+    volumes:
+      - frontend_dist:/html   # CMD copies /dist → /html then exits 0
+    networks:
+      - promptgram_net
+
   # ─── API Gateway ────────────────────────────────────────────────────────────
   nginx:
     image: nginx:1.25-alpine
@@ -10,7 +21,10 @@ services:
       - "80:80"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - frontend_dist:/usr/share/nginx/html:ro
     depends_on:
+      frontend:
+        condition: service_completed_successfully
       auth-service:
         condition: service_healthy
       prompt-service:
@@ -199,6 +213,7 @@ volumes:
   postgres_data:
   minio_data:
   qdrant_data:
+  frontend_dist:
 
 networks:
   promptgram_net:

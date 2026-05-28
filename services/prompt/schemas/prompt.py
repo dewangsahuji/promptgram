@@ -22,6 +22,10 @@ class PromptOut(BaseModel):
     views: int
     downloads: int
     created_at: datetime.datetime
+    # Enriched fields (may be None if not yet joined)
+    username: Optional[str] = None
+    thumbnail_url: Optional[str] = None
+    likes_count: Optional[int] = None
 
     model_config = {"from_attributes": True}
 
